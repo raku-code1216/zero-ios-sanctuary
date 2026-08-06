@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Zero (0) | 數碼避難所</title>
     
-    <!-- 載入 Tailwind CSS -->
+    <!-- ========================================== -->
+    <!-- === 外部套件載入 (Tailwind & Leaflet Map) === -->
+    <!-- ========================================== -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 載入 Leaflet 地圖庫 -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
@@ -21,215 +21,31 @@
                         brandLime: '#DEFF9A',
                         brandGray: '#121212',
                     },
-                    height: {
-                        screen: ['100vh', '100dvh']
-                    }
+                    height: { screen: ['100vh', '100dvh'] }
                 }
             }
         }
     </script>
     
+    <!-- ========================================== -->
+    <!-- === CSS 樣式定義區 === -->
+    <!-- ========================================== -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600&display=swap');
         
+        /* --- 基礎佈局 --- */
         body, html {
             font-family: 'Inter', sans-serif;
             background-color: #050505;
             color: #ffffff;
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100dvh;
+            margin: 0; padding: 0;
+            width: 100%; height: 100dvh;
             overflow: hidden;
-            -webkit-user-select: none;
-            user-select: none;
-            touch-action: none;
+            -webkit-user-select: none; user-select: none; touch-action: none;
         }
-
-        /* 隱藏預設滾動條 */
         ::-webkit-scrollbar { display: none; }
 
-        /* 背景與地圖圖層 */
-        #map-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 1.5s ease;
-            background: #050505;
-        }
-        #map-container.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .leaflet-container { background: #050505 !important; }
-        
-        /* 虛擬同行者光點 (回歸極致靜態、微弱的白光，不閃爍不移動) */
-        .companion-marker {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        /* 正常用戶 (青檸色) */
-        .companion-marker .dot-lime {
-            width: 3px; height: 3px; border-radius: 50%;
-            background-color: rgba(222, 255, 154, 0.5);
-            box-shadow: 0 0 6px 1px rgba(222, 255, 154, 0.2);
-        }
-        /* SOS 求助用戶 (暖金/橘色) */
-        .companion-marker .dot-gold {
-            width: 3.5px; height: 3.5px; border-radius: 50%;
-            background-color: rgba(255, 179, 71, 0.8);
-            box-shadow: 0 0 8px 2px rgba(255, 179, 71, 0.4);
-            animation: sosPulse 2s infinite;
-        }
-
-        @keyframes sosPulse {
-            0%, 100% { opacity: 0.6; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.2); }
-        }
-
-        /* 用戶當前位置 (User Location - 保持綠色脈衝) */
-        .user-location-marker {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .user-location-marker .pulse {
-            width: 8px;
-            height: 8px;
-            background-color: #DEFF9A;
-            border-radius: 50%;
-            box-shadow: 0 0 15px 3px rgba(222, 255, 154, 0.8);
-            animation: userPulse 2.5s infinite;
-        }
-        @keyframes userPulse {
-            0% { box-shadow: 0 0 0 0 rgba(222, 255, 154, 0.6); }
-            70% { box-shadow: 0 0 0 20px rgba(222, 255, 154, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(222, 255, 154, 0); }
-        }
-
-        /* 專屬 SOS 求助自身光點 (暖橘金) */
-        .user-location-marker .pulse-sos {
-            width: 8px;
-            height: 8px;
-            background-color: #FFB347;
-            border-radius: 50%;
-            box-shadow: 0 0 15px 3px rgba(255, 179, 71, 0.8);
-            animation: userSosPulse 2s infinite;
-        }
-        @keyframes userSosPulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 179, 71, 0.8); transform: scale(1); }
-            70% { box-shadow: 0 0 0 25px rgba(255, 179, 71, 0); transform: scale(1.2); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 179, 71, 0); transform: scale(1); }
-        }
-
-        /* 聲納脈衝波紋 (一般波紋) */
-        .custom-ripple-icon {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-        }
-        .ripple-wrapper {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-        .ripple-core {
-            width: 6px;
-            height: 6px;
-            background-color: #DEFF9A;
-            border-radius: 50%;
-            box-shadow: 0 0 12px 2px #DEFF9A;
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        .ripple-ring {
-            position: absolute;
-            border: 1px solid rgba(222, 255, 154, 0.8);
-            border-radius: 50%;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            animation: sonarRipple 4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-        }
-
-        /* SOS 求助波紋 (暖橘色) */
-        .sos-ripple-core {
-            width: 6px;
-            height: 6px;
-            background-color: #FFB347;
-            border-radius: 50%;
-            box-shadow: 0 0 12px 2px #FFB347;
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        .sos-ripple-ring {
-            position: absolute;
-            border: 1px solid rgba(255, 179, 71, 0.8);
-            border-radius: 50%;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            animation: sonarRipple 4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-        }
-
-        @keyframes sonarRipple {
-            0% { width: 6px; height: 6px; opacity: 1; }
-            100% { width: 180px; height: 180px; opacity: 0; }
-        }
-
-        /* 呼吸圓環與擴散特效 */
-        .pulse-container {
-            position: relative;
-            width: 160px;
-            height: 160px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .pulse-out {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            border: 1px solid rgba(222, 255, 154, 0.5);
-            animation: pulseWave 3s infinite ease-out;
-            pointer-events: none;
-        }
-        .pulse-out:nth-child(2) { animation-delay: 1s; }
-        .pulse-out:nth-child(3) { animation-delay: 2s; }
-
-        @keyframes pulseWave {
-            0% { transform: scale(1); opacity: 0.8; }
-            100% { transform: scale(2.5); opacity: 0; }
-        }
-
-        .floating { animation: floatAnim 6s ease-in-out infinite; }
-        @keyframes floatAnim {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        /* 呼吸極光球 */
-        .aurora-sphere {
-            width: 120px;
-            height: 120px;
-            background: radial-gradient(circle, rgba(222,255,154,0.4) 0%, rgba(222,255,154,0) 70%);
-            border-radius: 50%;
-            animation: breatheSphere 8s infinite ease-in-out;
-        }
-        @keyframes breatheSphere {
-            0%, 100% { transform: scale(1); opacity: 0.3; }
-            50% { transform: scale(1.6); opacity: 0.8; }
-        }
-
-        /* 毛玻璃面板 */
+        /* --- UI: 毛玻璃特效 --- */
         .frosted-glass {
             background: rgba(10, 10, 10, 0.75);
             backdrop-filter: blur(20px);
@@ -237,17 +53,98 @@
             border: 1px solid rgba(255,255,255,0.08);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
+
+        /* --- 地圖與圖層 --- */
+        #map-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; opacity: 0; pointer-events: none;
+            transition: opacity 1.5s ease; background: #050505;
+        }
+        #map-container.active { opacity: 1; pointer-events: auto; }
+        .leaflet-container { background: #050505 !important; }
+        
+        /* --- 地圖標記: 虛擬同行者光點 --- */
+        .companion-marker { display: flex; justify-content: center; align-items: center; }
+        .companion-marker .dot-lime {
+            width: 3px; height: 3px; border-radius: 50%;
+            background-color: rgba(222, 255, 154, 0.5);
+            box-shadow: 0 0 6px 1px rgba(222, 255, 154, 0.2);
+            transition: all 0.4s ease; /* 加入平滑過渡 */
+        }
+        .companion-marker .dot-gold {
+            width: 3.5px; height: 3.5px; border-radius: 50%;
+            background-color: rgba(255, 179, 71, 0.8);
+            box-shadow: 0 0 8px 2px rgba(255, 179, 71, 0.4);
+            animation: sosPulse 2s infinite;
+            transition: all 0.4s ease; /* 加入平滑過渡 */
+        }
+
+        /* 收到波紋時的高光點亮特效 (接收端) */
+        .glow-receive {
+            background-color: #FFFFFF !important;
+            box-shadow: 0 0 25px 8px rgba(255, 255, 255, 0.9) !important;
+            transform: scale(4) !important;
+            z-index: 999 !important;
+        }
+
+        /* --- 地圖標記: 用戶自身光點 --- */
+        .user-location-marker { display: flex; justify-content: center; align-items: center; }
+        .user-location-marker .pulse {
+            width: 8px; height: 8px; background-color: #DEFF9A; border-radius: 50%;
+            box-shadow: 0 0 15px 3px rgba(222, 255, 154, 0.8);
+            animation: userPulse 2.5s infinite;
+        }
+        .user-location-marker .pulse-sos {
+            width: 8px; height: 8px; background-color: #FFB347; border-radius: 50%;
+            box-shadow: 0 0 15px 3px rgba(255, 179, 71, 0.8);
+            animation: userSosPulse 2s infinite;
+        }
+
+        /* --- 地圖波紋動畫 --- */
+        .custom-ripple-icon { display: flex; justify-content: center; align-items: center; pointer-events: none; }
+        .ripple-wrapper { position: relative; width: 100%; height: 100%; }
+        
+        /* 一般青檸波紋 */
+        .ripple-core { width: 6px; height: 6px; background-color: #DEFF9A; border-radius: 50%; box-shadow: 0 0 12px 2px #DEFF9A; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .ripple-ring { position: absolute; border: 1px solid rgba(222, 255, 154, 0.8); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: sonarRipple 4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        /* SOS 橘色波紋 */
+        .sos-ripple-core { width: 6px; height: 6px; background-color: #FFB347; border-radius: 50%; box-shadow: 0 0 12px 2px #FFB347; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .sos-ripple-ring { position: absolute; border: 1px solid rgba(255, 179, 71, 0.8); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: sonarRipple 4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* --- UI 動畫 (呼吸圈、懸浮等) --- */
+        @keyframes sosPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
+        @keyframes userPulse { 0% { box-shadow: 0 0 0 0 rgba(222, 255, 154, 0.6); } 70% { box-shadow: 0 0 0 20px rgba(222, 255, 154, 0); } 100% { box-shadow: 0 0 0 0 rgba(222, 255, 154, 0); } }
+        @keyframes userSosPulse { 0% { box-shadow: 0 0 0 0 rgba(255, 179, 71, 0.8); transform: scale(1); } 70% { box-shadow: 0 0 0 25px rgba(255, 179, 71, 0); transform: scale(1.2); } 100% { box-shadow: 0 0 0 0 rgba(255, 179, 71, 0); transform: scale(1); } }
+        @keyframes sonarRipple { 0% { width: 6px; height: 6px; opacity: 1; } 100% { width: 180px; height: 180px; opacity: 0; } }
+        
+        .pulse-container { position: relative; width: 160px; height: 160px; display: flex; align-items: center; justify-content: center; }
+        .pulse-out { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 1px solid rgba(222, 255, 154, 0.5); animation: pulseWave 3s infinite ease-out; pointer-events: none; }
+        .pulse-out:nth-child(2) { animation-delay: 1s; }
+        .pulse-out:nth-child(3) { animation-delay: 2s; }
+        @keyframes pulseWave { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
+        
+        .floating { animation: floatAnim 6s ease-in-out infinite; }
+        @keyframes floatAnim { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        
+        .aurora-sphere { width: 120px; height: 120px; background: radial-gradient(circle, rgba(222,255,154,0.4) 0%, rgba(222,255,154,0) 70%); border-radius: 50%; animation: breatheSphere 8s infinite ease-in-out; }
+        @keyframes breatheSphere { 0%, 100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.6); opacity: 0.8; } }
     </style>
 </head>
 <body>
 
+    <!-- ========================================== -->
+    <!-- === HTML 結構區 === -->
+    <!-- ========================================== -->
+    
+    <!-- 地圖底層 -->
     <div id="map-container"></div>
 
-    <!-- 頂部導航 -->
+    <!-- UI: 頂部導航 -->
     <header id="mainHeader" class="absolute top-0 left-0 w-full px-6 py-8 flex justify-between items-center z-50 transition-opacity duration-1000">
         <div class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-brandLime animate-pulse"></span>
-            <span class="text-xs font-semibold tracking-widest text-brandLime">ZERO (0)</span>
+            <span class="text-xs font-semibold tracking-widest text-brandLime">Zero</span>
         </div>
         
         <div id="userStatus" class="flex items-center gap-3">
@@ -258,16 +155,16 @@
         </div>
     </header>
 
-    <!-- 首頁：準備狀態 -->
+    <!-- UI: 首頁 (準備呼吸與長按狀態) -->
     <main id="stateBreathing" class="absolute inset-0 z-20 flex flex-col items-center justify-center w-full h-[100dvh]">
         <div class="absolute top-[20%] text-center w-full px-6">
             <p class="text-sm font-light text-white/70 tracking-widest transition-opacity duration-1000 opacity-100" id="quoteText">世界很吵，這裡很靜。</p>
         </div>
 
+        <!-- 歸零環 -->
         <div class="floating pulse-container mt-10">
             <div class="pulse-out"></div>
             <div class="pulse-out"></div>
-            
             <div id="ringOuter" class="relative w-40 h-40 border border-brandLime/40 rounded-full flex items-center justify-center transition-all duration-500 z-10 bg-brandDark">
                 <button id="mainBtn" 
                         class="w-32 h-32 bg-brandLime/5 hover:bg-brandLime/10 border border-brandLime rounded-full flex items-center justify-center transition-all duration-300 active:scale-95 cursor-pointer relative overflow-hidden"
@@ -279,32 +176,34 @@
             </div>
         </div>
         
-        <div class="absolute bottom-[15%] flex flex-col items-center gap-4">
+        <div class="absolute bottom-[10%] flex flex-col items-center gap-4">
             <p id="instructionText" class="text-xs text-white/50 tracking-widest uppercase">長按 1.5 秒進入避難所</p>
             <p id="cooldownText" class="hidden text-brandLime font-mono text-xl tracking-widest">00:00:00</p>
             <button id="unlockBtn" onclick="openLoginModal()" class="hidden px-8 py-3 bg-white/5 border border-brandLime/50 text-brandLime rounded-full text-[10px] tracking-widest uppercase hover:bg-brandLime hover:text-black transition-colors">
                 解鎖無冷卻 (PRO)
             </button>
+            <!-- 新手指南按鈕 -->
+            <button id="tutorialBtn" onclick="openTutorial()" class="mt-4 text-[10px] text-white/40 hover:text-white uppercase tracking-widest transition-colors underline underline-offset-4">
+                新手指南 (How to use)
+            </button>
         </div>
     </main>
 
-    <!-- 避難所狀態：地圖與冥想 -->
+    <!-- UI: 避難所內部 (地圖、倒數、互動按鈕) -->
     <div id="stateActiveRefuge" class="hidden absolute inset-0 z-30 flex flex-col items-center justify-between pb-10 pt-24 pointer-events-none h-[100dvh]">
         
-        <!-- 頂部計時與音效控制 -->
+        <!-- 頂部：計時器與音效控制 -->
         <div class="flex flex-col items-center pointer-events-auto gap-3">
             <div class="frosted-glass px-8 py-3 rounded-full flex flex-col items-center">
                 <span class="text-[9px] text-brandLime/70 tracking-widest uppercase mb-1">避難倒數</span>
                 <span id="timerDisplay" class="text-3xl font-mono text-brandLime font-light tracking-widest leading-none">05:00</span>
             </div>
-            
-            <!-- 音效開關 -->
             <button onclick="toggleAudio()" id="audioToggleBtn" class="frosted-glass px-4 py-1.5 rounded-full text-[10px] text-white/60 hover:text-white tracking-widest transition-colors flex items-center gap-1.5">
                 <span>🔊</span> 沉浸音效: 開
             </button>
         </div>
 
-        <!-- 沉浸式極光球 -->
+        <!-- 畫面中央：冥想極光球 -->
         <div class="flex flex-col items-center pointer-events-none absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <div class="relative flex justify-center items-center w-48 h-48">
                 <div class="aurora-sphere absolute"></div>
@@ -312,12 +211,10 @@
             <p id="breatheGuideText" class="mt-8 text-xs font-light text-white/80 tracking-widest transition-opacity duration-1000">慢慢吸氣...</p>
         </div>
 
-        <!-- 底部共鳴面板 -->
+        <!-- 底部：共鳴與求助操作面板 -->
         <div class="frosted-glass w-11/12 max-w-md p-5 rounded-3xl flex flex-col gap-3 pointer-events-auto shadow-2xl">
             <div class="flex justify-between items-center px-1 border-b border-white/10 pb-3">
-                <span class="text-[11px] text-white/70 tracking-widest uppercase flex items-center gap-2">
-                    Global Resonance 
-                </span>
+                <span class="text-[11px] text-white/70 tracking-widest uppercase flex items-center gap-2">Global Resonance</span>
                 <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-brandLime animate-pulse"></span>
                     <span id="liveUserCount" class="text-brandLime text-xl font-mono tracking-widest font-semibold">128</span>
@@ -327,8 +224,6 @@
             <p class="text-xs text-white/80 text-center font-light leading-relaxed px-2 mt-1">
                 點擊地圖任何一處，發送你的寂靜波紋。<br>世界上的某個角落，有人正陪你一起安靜。
             </p>
-            
-            <!-- 操作按鈕區 -->
             <div class="flex flex-col gap-2 mt-1">
                 <button onclick="openSosModal()" class="w-full py-2.5 border border-orange-500/20 hover:border-orange-500/50 bg-orange-500/5 rounded-full text-[10px] text-orange-400 hover:text-orange-300 uppercase tracking-widest transition-all">
                     🆘 發送求助信號 (Need Help)
@@ -340,7 +235,27 @@
         </div>
     </div>
 
-    <!-- 發送波紋對話框 -->
+    <!-- ========================================== -->
+    <!-- === 全局通知與彈窗組件 === -->
+    <!-- ========================================== -->
+    
+    <!-- 攔截通知 (App Block Toast) -->
+    <div id="blockToast" class="fixed top-12 left-1/2 transform -translate-x-1/2 z-[80] frosted-glass px-6 py-3 rounded-full shadow-2xl transition-all duration-700 opacity-0 -translate-y-10 pointer-events-none flex items-center gap-3 border border-brandLime/30 bg-brandLime/5 w-[300px] justify-center">
+        <span class="text-brandLime animate-pulse">🛡️</span>
+        <span class="text-[11px] text-white tracking-widest font-light">系統接管：已攔截社交軟體</span>
+    </div>
+
+    <!-- 收到遠方波紋通知 (Receive Toast) -->
+    <div id="receiveToast" class="fixed top-24 left-1/2 transform -translate-x-1/2 z-[60] frosted-glass px-6 py-4 rounded-2xl shadow-2xl transition-all duration-700 opacity-0 -translate-y-10 pointer-events-none flex items-center gap-4 border border-brandLime/40 min-w-[280px]">
+        <span class="text-2xl" id="receiveIcon">〰️</span>
+        <div class="flex flex-col gap-1">
+            <span class="text-[9px] text-brandLime tracking-widest uppercase font-semibold" id="receiveTitle">收到遠方的共鳴</span>
+            <span id="receiveText" class="text-sm font-light text-white leading-snug"></span>
+            <span id="receiveTrans" class="hidden text-[10px] text-white/50 mt-0.5 tracking-widest"></span>
+        </div>
+    </div>
+
+    <!-- 發送波紋自定義對話框 (Click Map Capsule) -->
     <div id="phraseCapsule" class="hidden absolute z-50 flex flex-col items-center gap-3 frosted-glass p-5 rounded-3xl shadow-2xl transition-all border border-brandLime/20 w-64" style="transform: translate(-50%, -100%);">
         <p class="text-[10px] text-white/60 uppercase tracking-widest mb-1">發送一圈共鳴</p>
         <div id="phraseButtons" class="flex flex-col gap-2 w-full"></div>
@@ -361,10 +276,7 @@
                 <h3 class="text-xl text-orange-400 font-light tracking-widest uppercase">尋求協助</h3>
                 <p class="text-xs text-white/60 mt-3 leading-relaxed">當你感到無法承受時，讓避難所知道。<br>我們會向周圍發送溫暖的求助波紋。</p>
             </div>
-            
-            <!-- 新增的求助輸入框 -->
             <input type="text" id="sosStruggleInput" placeholder="你正在經歷什麼？(選填)" class="w-full bg-black/50 border border-orange-500/30 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-orange-500 transition-colors">
-            
             <div class="flex flex-col gap-3">
                 <button onclick="sendSosWave()" class="w-full py-3.5 bg-orange-500/20 hover:bg-orange-500 hover:text-black text-orange-400 rounded-full text-xs font-bold tracking-widest uppercase transition-colors border border-orange-500/50 shadow-lg shadow-orange-500/10">發送求助波紋</button>
                 <button onclick="closeSosModal()" class="w-full py-3 text-[10px] text-white/40 hover:text-white uppercase tracking-widest transition-colors">取消</button>
@@ -376,16 +288,56 @@
         </div>
     </div>
 
-    <!-- 收到遠方波紋通知 -->
-    <div id="receiveToast" class="fixed top-12 left-1/2 transform -translate-x-1/2 z-[60] frosted-glass px-6 py-4 rounded-2xl shadow-2xl transition-all duration-700 opacity-0 -translate-y-10 pointer-events-none flex items-center gap-4 border border-brandLime/40 min-w-[280px]">
-        <span class="text-2xl" id="receiveIcon">〰️</span>
-        <div class="flex flex-col gap-1">
-            <span class="text-[9px] text-brandLime tracking-widest uppercase font-semibold" id="receiveTitle">收到遠方的共鳴</span>
-            <span id="receiveText" class="text-sm font-light text-white leading-snug"></span>
+    <!-- 登入視窗 (Login Modal) -->
+    <div id="loginModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md">
+        <div class="frosted-glass p-8 rounded-3xl w-11/12 max-w-sm flex flex-col gap-6 shadow-2xl">
+            <div class="text-center">
+                <h3 class="text-xl text-brandLime font-light tracking-widest uppercase">驗證身份</h3>
+                <p class="text-xs text-white/50 mt-3 leading-relaxed">輸入您的專屬識別碼<br>找回深層避難權益</p>
+            </div>
+            <input type="email" id="emailInput" placeholder="輸入專屬識別碼" class="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brandLime transition-colors">
+            <div class="flex flex-col gap-3">
+                <button onclick="processLogin()" class="w-full py-3.5 bg-brandLime hover:bg-white text-black rounded-full text-xs font-bold tracking-widest uppercase transition-colors shadow-lg shadow-brandLime/20">登入</button>
+                <button onclick="closeLoginModal()" class="w-full py-3 text-[10px] text-white/40 hover:text-white uppercase tracking-widest transition-colors">取消</button>
+            </div>
         </div>
     </div>
 
-    <!-- 董事長專屬數據中心 (Admin Dashboard) -->
+    <!-- 新手指南視窗 (Tutorial Modal) -->
+    <div id="tutorialModal" class="hidden fixed inset-0 z-[120] flex items-center justify-center bg-black/90 backdrop-blur-sm">
+        <div class="frosted-glass p-8 rounded-3xl w-11/12 max-w-md flex flex-col gap-6 shadow-2xl border border-white/10">
+            <h3 class="text-xl text-brandLime font-light tracking-widest uppercase text-center border-b border-white/10 pb-4">如何使用 Zero (0)</h3>
+            <div class="flex flex-col gap-5 text-sm text-white/80 font-light leading-relaxed">
+                <div class="flex items-start gap-3">
+                    <span class="text-brandLime text-lg font-bold">1.</span>
+                    <div><strong class="text-white font-normal">長按卸載：</strong>長按首頁圓環 1.5 秒。系統將啟動防護，模擬<span class="text-brandLime">攔截社交軟體與干擾</span>，讓您進入絕對安靜的避難所。</div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <span class="text-brandLime text-lg font-bold">2.</span>
+                    <div><strong class="text-white font-normal">無聲陪伴：</strong>進入避難所後，地圖上的光點代表全球正在避難的同行者。點擊地圖可發送一圈「無聲波紋」給予彼此力量。</div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <span class="text-orange-400 text-lg font-bold">3.</span>
+                    <div><strong class="text-white font-normal">求助信標：</strong>若您感到壓力過載，點擊底部的「發送求助信號」。您的光點將化為暖橘色，並會收到來自世界的溫暖回饋。</div>
+                </div>
+            </div>
+            <button onclick="closeTutorial()" class="w-full py-3.5 mt-4 bg-white/10 hover:bg-brandLime hover:text-black text-white rounded-full text-xs font-bold tracking-widest uppercase transition-colors">我準備好了 (Enter)</button>
+        </div>
+    </div>
+
+    <!-- 地圖內步進式教學 (In-Map Tutorial) -->
+    <div id="inMapTutorial" class="hidden absolute z-[110] frosted-glass p-5 rounded-2xl w-64 flex flex-col gap-3 shadow-2xl border border-white/20 transition-all duration-700 pointer-events-auto" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
+        <div id="tutorialArrow" class="absolute hidden w-4 h-4 bg-brandDark border-t border-l border-white/20 rotate-45"></div>
+        <div class="flex justify-between items-center">
+            <span id="tutorialStepBadge" class="text-[9px] bg-brandLime text-black px-2 py-0.5 rounded font-bold tracking-widest uppercase">Step 1 / 3</span>
+            <button onclick="skipInMapTutorial()" class="text-[10px] text-white/40 hover:text-white transition-colors">✕</button>
+        </div>
+        <h3 id="tutorialTitle" class="text-sm text-brandLime font-light tracking-widest uppercase"></h3>
+        <p id="tutorialDesc" class="text-xs text-white/80 font-light leading-relaxed"></p>
+        <button id="tutorialNextBtn" onclick="nextTutorialStep()" class="w-full py-2 bg-white/10 hover:bg-brandLime hover:text-black text-white rounded-lg text-[10px] font-bold tracking-widest uppercase transition-colors mt-1">下一步</button>
+    </div>
+
+    <!-- 隱藏後台：董事長數據中心 (Admin Dashboard) -->
     <div id="adminDashboard" class="hidden fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4">
         <div class="w-full max-w-4xl h-5/6 frosted-glass rounded-3xl p-6 flex flex-col shadow-2xl border border-white/10">
             <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/10">
@@ -396,22 +348,20 @@
                 </div>
                 <button onclick="closeAdmin()" class="text-[10px] text-white/50 hover:text-white uppercase tracking-widest border border-white/20 hover:border-white/50 px-4 py-2 rounded-full transition-colors">關閉面板</button>
             </div>
-
             <div class="grid grid-cols-3 gap-4 mb-6">
                 <div class="bg-white/5 p-5 rounded-2xl border border-white/5">
-                    <p class="text-[9px] text-white/40 uppercase tracking-widest mb-1">Total Users</p>
-                    <p class="text-2xl font-mono text-brandLime">12,458</p>
+                    <p class="text-[9px] text-white/40 uppercase tracking-widest mb-1">Total Users (Simulated)</p>
+                    <p id="adminTotalUsers" class="text-2xl font-mono text-brandLime">12,458</p>
                 </div>
                 <div class="bg-white/5 p-5 rounded-2xl border border-white/5">
                     <p class="text-[9px] text-white/40 uppercase tracking-widest mb-1">Live Resonance</p>
-                    <p class="text-2xl font-mono text-brandLime">328</p>
+                    <p id="adminLiveUsers" class="text-2xl font-mono text-brandLime">0</p>
                 </div>
                 <div class="bg-orange-500/10 p-5 rounded-2xl border border-orange-500/20">
                     <p class="text-[9px] text-orange-400/80 uppercase tracking-widest mb-1">Active SOS</p>
-                    <p class="text-2xl font-mono text-orange-400">3</p>
+                    <p id="adminActiveSos" class="text-2xl font-mono text-orange-400">0</p>
                 </div>
             </div>
-
             <div class="flex-1 flex flex-col bg-black/60 rounded-2xl border border-white/5 overflow-hidden">
                 <div class="px-5 py-3 bg-white/5 border-b border-white/5 flex justify-between items-center">
                     <p class="text-[10px] text-white/60 tracking-widest uppercase">Live SOS Logs (實時求助攔截)</p>
@@ -423,140 +373,52 @@
         </div>
     </div>
 
-    <!-- 登入視窗 -->
-    <div id="loginModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md">
-        <div class="frosted-glass p-8 rounded-3xl w-11/12 max-w-sm flex flex-col gap-6 shadow-2xl">
-            <div class="text-center">
-                <!-- 登入框的專屬 Logo -->
-                <div class="flex justify-center mb-4">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-brandLime opacity-80">
-                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1"/>
-                        <path d="M7 17L17 7" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-                    </svg>
-                </div>
-                <h3 class="text-xl text-brandLime font-light tracking-widest uppercase">驗證身份</h3>
-                <p class="text-xs text-white/50 mt-3 leading-relaxed">輸入您的專屬識別碼<br>找回深層避難權益</p>
-            </div>
-            <input type="email" id="emailInput" placeholder="輸入識別碼或 Email" class="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brandLime transition-colors">
-            <div class="flex flex-col gap-3">
-                <button onclick="processLogin()" class="w-full py-3.5 bg-brandLime hover:bg-white text-black rounded-full text-xs font-bold tracking-widest uppercase transition-colors shadow-lg shadow-brandLime/20">登入</button>
-                <button onclick="closeLoginModal()" class="w-full py-3 text-[10px] text-white/40 hover:text-white uppercase tracking-widest transition-colors">取消</button>
-            </div>
-        </div>
-    </div>
 
+    <!-- ========================================== -->
+    <!-- === Javascript 核心邏輯區 === -->
+    <!-- ========================================== -->
     <script>
-        // ================= Web Audio 音效引擎 =================
-        let audioCtx, ambientGain, lowpassFilter, noiseNode, breatheLFO, lfoGain;
-        let isAudioMuted = false;
-
-        function initAudio() {
-            if (audioCtx) return;
-            try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const bufferSize = 2 * audioCtx.sampleRate;
-                const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-                const output = noiseBuffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
-                
-                noiseNode = audioCtx.createBufferSource();
-                noiseNode.buffer = noiseBuffer;
-                noiseNode.loop = true;
-                
-                lowpassFilter = audioCtx.createBiquadFilter();
-                lowpassFilter.type = 'lowpass';
-                lowpassFilter.frequency.value = 400; 
-                
-                ambientGain = audioCtx.createGain();
-                ambientGain.gain.value = 0; 
-                
-                noiseNode.connect(lowpassFilter);
-                lowpassFilter.connect(ambientGain);
-                ambientGain.connect(audioCtx.destination);
-                
-                breatheLFO = audioCtx.createOscillator();
-                breatheLFO.frequency.value = 1 / 8; // 8秒呼吸週期
-                lfoGain = audioCtx.createGain();
-                lfoGain.gain.value = 250; 
-                
-                breatheLFO.connect(lfoGain);
-                lfoGain.connect(lowpassFilter.frequency);
-                
-                noiseNode.start();
-                breatheLFO.start();
-            } catch (e) {
-                console.log("Audio Init Failed", e);
-            }
-        }
-
-        function toggleAudio() {
-            isAudioMuted = !isAudioMuted;
-            const btn = document.getElementById('audioToggleBtn');
-            if (isAudioMuted) {
-                btn.innerHTML = '<span>🔇</span> 沉浸音效: 關';
-                if (ambientGain && audioCtx) {
-                    ambientGain.gain.cancelScheduledValues(audioCtx.currentTime);
-                    ambientGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);
-                }
-            } else {
-                btn.innerHTML = '<span>🔊</span> 沉浸音效: 開';
-                if (ambientGain && audioCtx) {
-                    ambientGain.gain.cancelScheduledValues(audioCtx.currentTime);
-                    ambientGain.gain.linearRampToValueAtTime(0.8, audioCtx.currentTime + 1);
-                }
-            }
-        }
-
-        function startAmbientMusic() {
-            if(!audioCtx) initAudio();
-            if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-            if(ambientGain && audioCtx && !isAudioMuted) {
-                ambientGain.gain.cancelScheduledValues(audioCtx.currentTime);
-                ambientGain.gain.linearRampToValueAtTime(0.8, audioCtx.currentTime + 3);
-            }
-        }
-
-        function stopAmbientMusic() {
-            if(audioCtx && ambientGain) {
-                ambientGain.gain.cancelScheduledValues(audioCtx.currentTime);
-                ambientGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 2);
-            }
-        }
-
-        // ================= 全局狀態與功能 =================
+        /* ==========================================
+           === JS: 全局變數與狀態管理 ===
+           ========================================== */
         let isPro = localStorage.getItem('zero_is_pro') === 'true';
         let customPhrase = localStorage.getItem('zero_custom_phrase');
+        
         let map = null;
         let pendingClickLatLng = null;
         let userLatLng = null;
-        let userMarker = null; // 修正：加入全域宣告，防止系統找不到變數而報錯
-        let companionMarkers = []; // 儲存所有同行者標記，以便讓他們「活過來」
+        let userMarker = null; // 追蹤用戶自身光點，用於變更顏色
+        let companionMarkers = []; 
+        let liveUsers = 128; // 全局稀缺人數
+        
+        // 步進教學變數
+        let currentTutorialStep = 1;
 
-        // 輪播首頁字句
+        // 首頁輪播字句
         const quotes = ["世界很吵，這裡很靜。", "放下焦慮，深呼吸。", "奪回屬於你的 15 分鐘。"];
         let quoteIndex = 0;
         setInterval(() => {
             const qEl = document.getElementById('quoteText');
             if(qEl) {
                 qEl.style.opacity = 0;
-                setTimeout(() => {
-                    quoteIndex = (quoteIndex + 1) % quotes.length;
-                    qEl.innerText = quotes[quoteIndex];
-                    qEl.style.opacity = 1;
-                }, 1000);
+                setTimeout(() => { quoteIndex = (quoteIndex + 1) % quotes.length; qEl.innerText = quotes[quoteIndex]; qEl.style.opacity = 1; }, 1000);
             }
         }, 4000);
 
-        // 即時在線人數模擬 (配合新增的 200 多個光點)
-        let liveUsers = 328;
-        setInterval(() => {
-            if (document.getElementById('stateActiveRefuge').classList.contains('hidden')) return;
-            // 微微波動，-1, 0, 或 +1，非常真實
-            liveUsers += Math.floor(Math.random() * 3) - 1; 
-            document.getElementById('liveUserCount').innerText = liveUsers.toLocaleString();
-        }, 5000);
 
-        // 檢查 2 小時冷卻
+        /* ==========================================
+           === JS: UI 彈窗 (新手指南、登入、冷卻) ===
+           ========================================== */
+        function openTutorial() { document.getElementById('tutorialModal').classList.remove('hidden'); }
+        function closeTutorial() { document.getElementById('tutorialModal').classList.add('hidden'); }
+
+        function openLoginModal() { 
+            document.getElementById('loginModal').classList.remove('hidden'); 
+            document.getElementById('emailInput').value = '';
+        }
+        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+        
+        // 冷卻時間邏輯 (防沉迷/商業轉化)
         function checkCooldown() {
             if (isPro) return false;
             const cooldownUntil = localStorage.getItem('zero_cooldown');
@@ -568,20 +430,16 @@
                 document.getElementById('instructionText').innerText = "避難所重置中";
                 document.getElementById('cooldownText').classList.remove('hidden');
                 document.getElementById('unlockBtn').classList.remove('hidden');
+                document.getElementById('tutorialBtn').classList.add('hidden');
                 
                 const icon = document.getElementById('centerIcon');
-                icon.innerText = "🔒";
-                icon.classList.remove('text-brandLime');
-                icon.classList.add('text-white/50');
-                
+                icon.innerText = "🔒"; icon.classList.remove('text-brandLime'); icon.classList.add('text-white/50');
                 const ring = document.getElementById('ringOuter');
-                ring.classList.remove('border-brandLime/40', 'bg-brandDark');
-                ring.classList.add('border-white/20', 'bg-white/5');
+                ring.classList.remove('border-brandLime/40', 'bg-brandDark'); ring.classList.add('border-white/20', 'bg-white/5');
                 
                 const tick = () => {
                     if(!checkCooldown()) { resetApp(); return; }
-                    const end = parseInt(localStorage.getItem('zero_cooldown'));
-                    const diff = end - Date.now();
+                    const diff = parseInt(localStorage.getItem('zero_cooldown')) - Date.now();
                     const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
                     const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
                     const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
@@ -592,68 +450,93 @@
             }
         }
 
-        // ================= 登入模組 =================
+        function applyProUI() {
+            document.getElementById('proBadge').classList.remove('hidden');
+            document.getElementById('userStatus').innerHTML = '<span class="text-[10px] text-brandDark font-bold uppercase tracking-widest bg-brandLime px-3 py-1.5 rounded-full shadow-lg shadow-brandLime/20">已登入 (PRO)</span>';
+        }
+
+
+        /* ==========================================
+           === JS: 董事長數據中心 (Admin Dashboard) ===
+           ========================================== */
         let adminUpdateInterval;
         let simulatedTotalUsers = 12458;
 
-        function openLoginModal() { 
-            document.getElementById('loginModal').classList.remove('hidden'); 
-            document.getElementById('emailInput').value = '';
-            document.getElementById('emailInput').focus();
+        // ==========================================
+        // === JS: 全局通知與堆疊系統 ===
+        // ==========================================
+        function spawnToast(icon, title, titleClass, text, trans, borderClass) {
+            const container = document.getElementById('toastContainer');
+            if(!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `frosted-glass px-6 py-4 rounded-2xl shadow-2xl transition-all duration-700 pointer-events-none flex items-center gap-4 border ${borderClass} min-w-[280px] opacity-0 -translate-y-4`;
+            
+            let html = `<span class="text-2xl">${icon}</span><div class="flex flex-col gap-1">`;
+            html += `<span class="${titleClass}">${title}</span>`;
+            html += `<span class="text-sm font-light text-white leading-snug">${text}</span>`;
+            if(trans) html += `<span class="text-[10px] text-white/50 mt-0.5 tracking-widest">${trans}</span>`;
+            html += `</div>`;
+            
+            toast.innerHTML = html;
+            container.prepend(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', '-translate-y-4');
+                toast.classList.add('opacity-100', 'translate-y-0');
+            });
+
+            // Auto remove after 60 seconds
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-4');
+                setTimeout(() => { if(toast.parentNode) toast.remove(); }, 700);
+            }, 60000);
         }
-        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
-        
+
         function processLogin() {
             const email = document.getElementById('emailInput').value.trim();
             if(!email) return;
             
-            // 董事長專屬上帝視角
+            // 董事長專屬後台入口 (God Mode)
             if(email === 's20141602@gmail.com') {
                 closeLoginModal();
                 document.getElementById('adminDashboard').classList.remove('hidden');
-                
-                // 順便解鎖 PRO
-                isPro = true;
-                localStorage.setItem('zero_is_pro', 'true');
-                applyProUI();
-                
-                // 啟動數據中心實時更新
+                isPro = true; localStorage.setItem('zero_is_pro', 'true'); applyProUI();
                 startAdminDashboardUpdates();
                 return;
             }
 
-            isPro = true;
-            localStorage.setItem('zero_is_pro', 'true');
-            closeLoginModal();
-            applyProUI();
-            resetApp(); 
+            // 一般用戶登入 (解鎖 PRO)
+            isPro = true; localStorage.setItem('zero_is_pro', 'true');
+            closeLoginModal(); applyProUI(); resetApp(); 
         }
 
         function closeAdmin() {
             document.getElementById('adminDashboard').classList.add('hidden');
-            clearInterval(adminUpdateInterval); // 停止更新
+            clearInterval(adminUpdateInterval);
             resetApp();
         }
 
         function startAdminDashboardUpdates() {
             const updateTotal = () => {
-                // 模擬總用戶增長
+                // 模擬全網下載量增長
                 if(Math.random() > 0.6) simulatedTotalUsers += Math.floor(Math.random() * 3);
                 
                 const totalEl = document.getElementById('adminTotalUsers');
-                if (totalEl) totalEl.innerText = simulatedTotalUsers.toLocaleString();
+                if(totalEl) totalEl.innerText = simulatedTotalUsers.toLocaleString();
                 
-                // 同步前台的實時在線人數
+                // 完全同步前台設定的 128 人 (加上微波函數)
                 const liveEl = document.getElementById('adminLiveUsers');
-                if (liveEl) liveEl.innerText = liveUsers.toLocaleString();
+                if(liveEl) liveEl.innerText = liveUsers.toLocaleString();
 
-                // 計算地圖上真實存在的 SOS 光點數量
+                // 實時統計地圖上的 SOS 求助者
                 const sosCount = companionMarkers.filter(m => m.isSos).length;
                 const sosEl = document.getElementById('adminActiveSos');
-                if (sosEl) sosEl.innerText = sosCount.toString();
+                if(sosEl) sosEl.innerText = sosCount.toString();
             };
-            
-            updateTotal(); // 立即更新一次
+            updateTotal(); 
             adminUpdateInterval = setInterval(updateTotal, 2000);
         }
 
@@ -667,12 +550,10 @@
             container.prepend(logEntry);
         }
 
-        function applyProUI() {
-            document.getElementById('proBadge').classList.remove('hidden');
-            document.getElementById('userStatus').innerHTML = '<span class="text-[10px] text-brandDark font-bold uppercase tracking-widest bg-brandLime px-3 py-1.5 rounded-full shadow-lg shadow-brandLime/20">已登入 (PRO)</span>';
-        }
 
-        // ================= 長按邏輯 =================
+        /* ==========================================
+           === JS: 長按觸發與進入避難所 ===
+           ========================================== */
         let holdTimer, holdProgress = 0, safeTimer, secondsRemaining = 300;
 
         function startHold(e) {
@@ -684,10 +565,7 @@
             holdTimer = setInterval(() => {
                 holdProgress += 5;
                 document.getElementById('btnFill').style.height = holdProgress + '%';
-                if (holdProgress >= 100) {
-                    clearInterval(holdTimer);
-                    triggerSanctuaryStart();
-                }
+                if (holdProgress >= 100) { clearInterval(holdTimer); triggerSanctuaryStart(); }
             }, 75);
         }
 
@@ -700,18 +578,118 @@
             }
         }
 
-        // ================= Leaflet 地圖 =================
+        function triggerSanctuaryStart() {
+            document.getElementById('mainHeader').classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('stateBreathing').classList.add('hidden');
+            
+            // 系統攔截通知 (App Blocking Simulation)
+            setTimeout(() => {
+                const blockToast = document.getElementById('blockToast');
+                if(blockToast) {
+                    blockToast.classList.remove('opacity-0', '-translate-y-10', 'pointer-events-none');
+                    setTimeout(() => { blockToast.classList.add('opacity-0', '-translate-y-10', 'pointer-events-none'); }, 4000);
+                }
+            }, 500);
+
+            document.getElementById('map-container').classList.add('active');
+            document.getElementById('stateActiveRefuge').classList.remove('hidden');
+            
+            initLeafletMap();
+            if (map) setTimeout(() => map.invalidateSize(), 100);
+
+            startAmbientMusic(); startBreathingGuide(); startNetworkActivity();
+
+            // 檢查是否看過地圖教學
+            if (!localStorage.getItem('zero_map_tutorial_seen')) {
+                showInMapTutorial();
+            } else {
+                startRefugeTimer(); // 看過就直接開始倒數
+            }
+        }
+        
+        // 避難所倒數計時邏輯 (分離出來以便教學結束後觸發)
+        function startRefugeTimer() {
+            secondsRemaining = 300; updateTimerDisplay();
+            safeTimer = setInterval(() => {
+                secondsRemaining--; updateTimerDisplay();
+                if (secondsRemaining <= 0) fastForwardTimer();
+            }, 1000);
+        }
+
+        /* === 地圖內步進式教學邏輯 === */
+        function showInMapTutorial() {
+            document.getElementById('inMapTutorial').classList.remove('hidden');
+            currentTutorialStep = 1;
+            updateTutorialUI();
+        }
+
+        function updateTutorialUI() {
+            const tutBox = document.getElementById('inMapTutorial');
+            const arrow = document.getElementById('tutorialArrow');
+            const badge = document.getElementById('tutorialStepBadge');
+            const title = document.getElementById('tutorialTitle');
+            const desc = document.getElementById('tutorialDesc');
+            const nextBtn = document.getElementById('tutorialNextBtn');
+            
+            badge.innerText = `Step ${currentTutorialStep} / 3`;
+
+            if (currentTutorialStep === 1) {
+                // Step 1: Center Map (點擊地圖)
+                tutBox.style.top = '50%'; tutBox.style.bottom = 'auto'; tutBox.style.left = '50%'; tutBox.style.transform = 'translate(-50%, -50%)';
+                arrow.classList.add('hidden');
+                badge.className = 'text-[9px] bg-brandLime text-black px-2 py-0.5 rounded font-bold tracking-widest uppercase';
+                title.innerText = '全球共鳴地圖'; title.className = 'text-sm text-brandLime font-light tracking-widest uppercase';
+                desc.innerHTML = '地圖上微弱的光點，是此刻世界各地與你一起避難的人。<br><br><strong class="text-white animate-pulse">👉 試著點擊地圖任意處</strong>，發送一圈無聲波紋。';
+                nextBtn.innerText = '或點擊繼續 (Next)';
+                tutBox.classList.remove('border-orange-500/40'); tutBox.classList.add('border-white/20');
+            } else if (currentTutorialStep === 2) {
+                // Step 2: Bottom SOS (點擊求助)
+                tutBox.style.top = 'auto'; tutBox.style.bottom = '160px'; tutBox.style.left = '50%'; tutBox.style.transform = 'translateX(-50%)';
+                arrow.classList.remove('hidden'); arrow.style.bottom = '-8px'; arrow.style.top = 'auto'; arrow.style.left = '50%'; arrow.style.transform = 'translateX(-50%) rotate(225deg)';
+                badge.className = 'text-[9px] bg-orange-400 text-black px-2 py-0.5 rounded font-bold tracking-widest uppercase';
+                title.innerText = '求助信標'; title.className = 'text-sm text-orange-400 font-light tracking-widest uppercase';
+                desc.innerHTML = '當你覺得無法承受時，讓世界知道。<br><br><strong class="text-white animate-pulse">👉 試著點擊下方的「發送求助」</strong>。';
+                nextBtn.innerText = '或點擊繼續 (Next)';
+                tutBox.classList.remove('border-white/20', 'border-brandLime/40'); tutBox.classList.add('border-orange-500/40');
+            } else if (currentTutorialStep === 3) {
+                // Step 3: Top Timer (準備沉浸)
+                tutBox.style.bottom = 'auto'; tutBox.style.top = '100px'; tutBox.style.left = '50%'; tutBox.style.transform = 'translateX(-50%)';
+                arrow.classList.remove('hidden'); arrow.style.bottom = 'auto'; arrow.style.top = '-8px'; arrow.style.left = '50%'; arrow.style.transform = 'translateX(-50%) rotate(45deg)';
+                badge.className = 'text-[9px] bg-brandLime text-black px-2 py-0.5 rounded font-bold tracking-widest uppercase';
+                title.innerText = '沉浸與倒數'; title.className = 'text-sm text-brandLime font-light tracking-widest uppercase';
+                desc.innerHTML = '接下來的 5 分鐘，沒有人可以打擾你。準備好後就開始吧。';
+                nextBtn.innerText = '開始避難 (Start)';
+                tutBox.classList.remove('border-orange-500/40'); tutBox.classList.add('border-brandLime/40');
+            }
+        }
+
+        function nextTutorialStep() {
+            if (currentTutorialStep < 3) {
+                currentTutorialStep++;
+                updateTutorialUI();
+            } else {
+                skipInMapTutorial();
+            }
+        }
+
+        function skipInMapTutorial() {
+            document.getElementById('inMapTutorial').classList.add('hidden');
+            localStorage.setItem('zero_map_tutorial_seen', 'true');
+            startRefugeTimer(); // 結束教學後才開始 5 分鐘倒數
+        }
+
+        /* ==========================================
+           === JS: Leaflet 地圖與光點邏輯 ===
+           ========================================== */
         function initLeafletMap() {
             if (map) return;
             map = L.map('map-container', { zoomControl: false, attributionControl: false }).setView([22.3193, 114.1694], 4);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { maxZoom: 18 }).addTo(map);
 
-            // 1. 散佈虛擬同行者 (純淨白點，不移動)
-            spawnCompanionDots();
+            spawnCompanionDots(); // 生成全球同行者
+            locateUser();         // 定位用戶自身
 
-            // 2. 獲取用戶真實地理位置
-            locateUser();
-
+            // 點擊地圖發送波紋功能
             map.on('click', function(e) {
                 pendingClickLatLng = e.latlng;
                 const point = map.latLngToContainerPoint(e.latlng);
@@ -719,128 +697,79 @@
                 let leftPos = point.x;
                 if(leftPos < 130) leftPos = 130;
                 if(leftPos > window.innerWidth - 130) leftPos = window.innerWidth - 130;
-                capsule.style.left = leftPos + 'px';
-                capsule.style.top = (point.y - 20) + 'px';
+                capsule.style.left = leftPos + 'px'; capsule.style.top = (point.y - 20) + 'px';
                 capsule.classList.remove('hidden');
                 buildPhraseButtons();
+                
+                // 互動式教學：如果正在 Step 1，自動跳 Step 2
+                const tutBox = document.getElementById('inMapTutorial');
+                if (tutBox && !tutBox.classList.contains('hidden') && currentTutorialStep === 1) {
+                    nextTutorialStep();
+                }
             });
             map.on('dragstart zoomstart', () => { document.getElementById('phraseCapsule').classList.add('hidden'); });
         }
 
+        // 精確的全球 30 城 + 5% 香港內陸演算法
         function spawnCompanionDots() {
-            companionMarkers = []; // 重置
+            companionMarkers = []; 
+            const numDots = 128; // 全球稀缺人數
 
-            // 全球 29 大城市精確內陸座標 (Global Matrix)
+            const hkAnchors = [
+                [22.335, 114.176], [22.378, 114.185], [22.443, 114.028], [22.282, 114.150]
+            ];
             const globalCities = [
-                // 亞洲 (Asia)
-                [35.68, 139.73], // 東京
-                [37.56, 126.98], // 首爾
-                [39.91, 116.40], // 北京
-                [31.23, 121.47], // 上海
-                [25.03, 121.56], // 台北
-                [13.75, 100.50], // 曼谷
-                [1.35, 103.82],  // 新加坡
-                [19.08, 72.88],  // 孟買
-                [25.10, 55.26],  // 杜拜
-                [24.71, 46.67],  // 利雅德
-                // 歐洲 (Europe)
-                [51.51, -0.12],  // 倫敦
-                [48.86, 2.34],   // 巴黎
-                [52.52, 13.40],  // 柏林
-                [40.42, -3.70],  // 馬德里
-                [41.90, 12.49],  // 羅馬
-                [52.37, 4.89],   // 阿姆斯特丹
-                [55.75, 37.61],  // 莫斯科
-                // 美洲 (Americas)
-                [40.75, -73.98], // 紐約
-                [34.05, -118.24],// 洛杉磯
-                [41.88, -87.63], // 芝加哥
-                [37.77, -122.42],// 舊金山
-                [43.65, -79.38], // 多倫多
-                [19.43, -99.13], // 墨西哥城
-                [-23.55, -46.63],// 聖保羅
-                [-34.60, -58.38],// 布宜諾斯艾利斯
-                // 大洋洲與非洲 (Oceania & Africa)
-                [-33.87, 151.20],// 雪梨
-                [-37.81, 144.96],// 墨爾本
-                [-26.20, 28.04], // 約翰尼斯堡
-                [30.04, 31.23]   // 開羅
+                [35.68, 139.73], [37.56, 126.98], [39.91, 116.40], [31.23, 121.47], [25.03, 121.56], 
+                [13.75, 100.50], [1.35, 103.82],  [25.10, 55.26],  [51.51, -0.12],  [48.86, 2.34],   
+                [52.52, 13.40],  [41.90, 12.49],  [40.75, -73.98], [34.05, -118.24],[41.88, -87.63], 
+                [37.77, -122.42],[43.65, -79.38], [-23.55, -46.63],[-33.87, 151.20],[-37.81, 144.96],
+                [25.20, 55.27],  [39.90, 32.85],  [19.43, -99.13], [-34.60, -58.38],[55.75, 37.61],
+                [30.04, 31.23],  [-1.29, 36.82],  [28.61, 77.20],  [-22.90, -43.20],[45.42, -75.69]
             ];
 
-            // 香港專屬內陸錨點
-            const hkHubs = [
-                [22.316, 114.180], // 何文田
-                [22.336, 114.176], // 九龍塘
-                [22.380, 114.188]  // 沙田
-            ];
-
-            const numDots = 328; 
-            
             for(let i = 0; i < numDots; i++) {
-                // 嚴格機率控制：5% 在香港，95% 在全球其他城市
-                const isHK = Math.random() < 0.05; 
+                const isHK = Math.random() < 0.05; // 嚴格 5% 落在香港
+                const hub = isHK ? hkAnchors[Math.floor(Math.random() * hkAnchors.length)] : globalCities[Math.floor(Math.random() * globalCities.length)];
                 
-                const hub = isHK 
-                    ? hkHubs[Math.floor(Math.random() * hkHubs.length)]
-                    : globalCities[Math.floor(Math.random() * globalCities.length)];
-                
-                // 微距抖動極限壓縮至 0.012 度 (約 1.2 公里)
-                const latOffset = (Math.random() - 0.5) * 0.012;
-                const lngOffset = (Math.random() - 0.5) * 0.012;
-                
-                const lat = hub[0] + latOffset;
-                const lng = hub[1] + lngOffset;
+                // 800 公尺微距抖動，確保不掉進海裡
+                const latOffset = (Math.random() - 0.5) * 0.008; 
+                const lngOffset = (Math.random() - 0.5) * 0.008;
+                const lat = hub[0] + latOffset; const lng = hub[1] + lngOffset;
 
-                const randType = Math.random();
-                let dotClass = 'dot-lime';
-                let isSos = false;
-                
-                // 5% 機率出現暖橘金 SOS 光點
-                if (randType > 0.95) {
-                    dotClass = 'dot-gold';
-                    isSos = true;
-                }
+                const isSos = Math.random() > 0.95; // 5% 的人處於求助狀態
+                const dotClass = isSos ? 'dot-gold' : 'dot-lime';
 
-                const customIcon = L.divIcon({ 
-                    className: 'companion-marker', 
-                    html: `<div class="${dotClass}" style="animation-delay: ${Math.random() * 4}s"></div>`, 
-                    iconSize: [8, 8] 
-                });
-                
+                const customIcon = L.divIcon({ className: 'companion-marker', html: `<div class="${dotClass}" style="animation-delay: ${Math.random() * 4}s"></div>`, iconSize: [8, 8] });
                 const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
                 companionMarkers.push({ marker: marker, lat: lat, lng: lng, isSos: isSos }); 
             }
         }
 
+        // 用戶自身定位與 UI 提示
         function locateUser() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(position => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    userLatLng = [lat, lng]; // 儲存用戶位置供求助信號使用
+                    const lat = position.coords.latitude; const lng = position.coords.longitude;
+                    userLatLng = [lat, lng];
                     
                     const userIcon = L.divIcon({ className: 'user-location-marker', html: '<div class="pulse"></div>', iconSize: [30, 30] });
                     userMarker = L.marker([lat, lng], { icon: userIcon }).addTo(map);
                     
-                    // 將縮放層級從 6 改為 12，讓鏡頭俯衝感更強烈、更貼近城市
-                    setTimeout(() => {
-                        map.flyTo([lat, lng], 12, { duration: 3, easeLinearity: 0.1 });
-                    }, 500);
+                    // 縮放層級設為 12，提供更好的城市俯瞰感
+                    setTimeout(() => { map.flyTo([lat, lng], 12, { duration: 3, easeLinearity: 0.1 }); }, 500);
                 }, (error) => {
-                    console.log("Location error:", error);
-                    // 定位失敗時的優雅 UI 提示
+                    // 優雅的定位失敗處理
                     const toast = document.getElementById('receiveToast');
                     document.getElementById('receiveIcon').innerText = '📍';
-                    document.getElementById('receiveTitle').innerText = '無法獲取真實位置';
+                    document.getElementById('receiveTitle').innerText = '無法獲取位置';
                     document.getElementById('receiveTitle').className = 'text-[9px] text-white/50 tracking-widest uppercase font-semibold';
-                    document.getElementById('receiveText').innerText = '已將您安置於避難所中心。若需顯示您的專屬光點，請允許瀏覽器存取位置權限。';
+                    document.getElementById('receiveText').innerText = '已將您安置於避難所中心。若需顯示專屬光點，請允許存取位置權限。';
                     toast.classList.replace('border-brandLime/40', 'border-white/20');
-                    
                     toast.classList.remove('opacity-0', '-translate-y-10', 'pointer-events-none');
+                    
                     setTimeout(() => { 
                         toast.classList.add('opacity-0', '-translate-y-10', 'pointer-events-none'); 
                         setTimeout(() => {
-                            // Reset toast styling
                             document.getElementById('receiveIcon').innerText = '〰️';
                             document.getElementById('receiveTitle').innerText = '收到遠方的共鳴';
                             document.getElementById('receiveTitle').className = 'text-[9px] text-brandLime tracking-widest uppercase font-semibold';
@@ -851,246 +780,241 @@
             }
         }
 
-        // ================= 波紋與求助模組 =================
+        // 實時人數微微波動
+        setInterval(() => {
+            if (document.getElementById('stateActiveRefuge').classList.contains('hidden')) return;
+            liveUsers += Math.floor(Math.random() * 3) - 1; 
+            if(document.getElementById('liveUserCount')) document.getElementById('liveUserCount').innerText = liveUsers.toLocaleString();
+        }, 5000);
+
+
+        /* ==========================================
+           === JS: 共鳴波紋與 SOS 求助邏輯 ===
+           ========================================== */
+        
+        // 一般波紋選單
         function buildPhraseButtons() {
-            const container = document.getElementById('phraseButtons');
-            let html = '';
+            const container = document.getElementById('phraseButtons'); let html = '';
             if (customPhrase) {
                 html += `<button onclick="sendWave('${customPhrase}')" class="w-full px-5 py-3 bg-brandLime/20 border border-brandLime/40 hover:bg-brandLime/40 rounded-xl text-xs text-brandLime font-bold tracking-wide flex justify-between items-center transition-colors">
-                            <span class="truncate pr-2">${customPhrase}</span>
-                            <span class="text-[9px] bg-brandLime text-black px-1.5 py-0.5 rounded shadow flex-shrink-0">✨ 專屬</span>
-                         </button>`;
+                            <span class="truncate pr-2">${customPhrase}</span><span class="text-[9px] bg-brandLime text-black px-1.5 py-0.5 rounded shadow flex-shrink-0">✨ 專屬</span></button>`;
             }
             html += `<button onclick="sendWave('一切都會慢慢變好的。')" class="w-full px-5 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-xs text-white tracking-wide transition-colors text-left truncate">一切都會慢慢變好的。</button>
                      <button onclick="sendWave('深呼吸，你不是一個人。')" class="w-full px-5 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-xs text-white tracking-wide transition-colors text-left truncate">深呼吸，你不是一個人。</button>`;
             container.innerHTML = html;
         }
 
-        function openCustomInput() {
-            document.getElementById('phraseButtons').classList.add('hidden');
-            document.getElementById('customInputArea').classList.remove('hidden');
-            document.getElementById('customInputArea').classList.add('flex');
-            setTimeout(() => document.getElementById('customWaveMsg').focus(), 100);
-        }
-
-        function cancelCustomInput() {
-            document.getElementById('customInputArea').classList.add('hidden');
-            document.getElementById('customInputArea').classList.remove('flex');
-            document.getElementById('phraseButtons').classList.remove('hidden');
-            document.getElementById('customWaveMsg').value = '';
-        }
+        function openCustomInput() { document.getElementById('phraseButtons').classList.add('hidden'); document.getElementById('customInputArea').classList.remove('hidden', 'flex'); document.getElementById('customInputArea').classList.add('flex'); }
+        function cancelCustomInput() { document.getElementById('customInputArea').classList.add('hidden'); document.getElementById('customInputArea').classList.remove('flex'); document.getElementById('phraseButtons').classList.remove('hidden'); document.getElementById('customWaveMsg').value = ''; }
 
         function submitCustomWave() {
             const msg = document.getElementById('customWaveMsg').value.trim();
-            const badWords = ['幹', '操', '垃圾', '死', '笨', 'fuck', 'shit'];
-            if(badWords.some(w => msg.toLowerCase().includes(w))) {
-                // 不使用 alert，改用 UI 提示 (實際開發可做更完善的 Toast)
-                document.getElementById('customWaveMsg').value = '';
-                document.getElementById('customWaveMsg').placeholder = '請使用溫和的語言...';
-                return;
-            }
-            if(msg) {
-                localStorage.setItem('zero_custom_phrase', msg);
-                customPhrase = msg;
-                sendWave(msg);
-            }
+            if(msg) { localStorage.setItem('zero_custom_phrase', msg); customPhrase = msg; sendWave(msg); }
         }
 
         function sendWave(text) {
-            document.getElementById('phraseCapsule').classList.add('hidden');
-            cancelCustomInput();
+            document.getElementById('phraseCapsule').classList.add('hidden'); cancelCustomInput();
             if(pendingClickLatLng && map) {
-                const markerIcon = L.divIcon({ 
-                    className: 'custom-ripple-icon', 
-                    html: '<div class="ripple-wrapper"><div class="ripple-core"></div><div class="ripple-ring"></div><div class="ripple-ring" style="animation-delay: 0.8s"></div></div>',
-                    iconSize: [200, 200],
-                    iconAnchor: [100, 100] 
-                });
+                // 發送視覺波紋
+                const markerIcon = L.divIcon({ className: 'custom-ripple-icon', html: '<div class="ripple-wrapper"><div class="ripple-core"></div><div class="ripple-ring"></div><div class="ripple-ring" style="animation-delay: 0.8s"></div></div>', iconSize: [200, 200], iconAnchor: [100, 100] });
                 const marker = L.marker(pendingClickLatLng, { icon: markerIcon }).addTo(map);
                 setTimeout(() => { map.removeLayer(marker); }, 4000); 
+
+                // 模擬波紋傳遞：精準點亮波紋範圍內的光點
+                if (companionMarkers.length > 0) {
+                    // 將點擊位置轉換為螢幕像素座標
+                    const centerPoint = map.latLngToContainerPoint(pendingClickLatLng);
+                    const maxRadiusPixels = 90; // 波紋最大視覺半徑 (180px寬度的一半)
+
+                    // 篩選出真實落在波紋圓圈內的光點
+                    const receivers = companionMarkers.filter(comp => {
+                        const compPoint = map.latLngToContainerPoint([comp.lat, comp.lng]);
+                        const distPx = Math.sqrt(Math.pow(centerPoint.x - compPoint.x, 2) + Math.pow(centerPoint.y - compPoint.y, 2));
+                        return distPx <= maxRadiusPixels; 
+                    });
+                    
+                    receivers.forEach((comp) => {
+                        const compPoint = map.latLngToContainerPoint([comp.lat, comp.lng]);
+                        const distPx = Math.sqrt(Math.pow(centerPoint.x - compPoint.x, 2) + Math.pow(centerPoint.y - compPoint.y, 2));
+                        
+                        // 根據距離計算波紋抵達的延遲時間 (模擬物理波速)
+                        const delay = (distPx / maxRadiusPixels) * 1200 + 100;
+
+                        setTimeout(() => {
+                            if (comp.marker && comp.marker.getElement()) {
+                                const dot = comp.marker.getElement().firstElementChild;
+                                if (dot) {
+                                    // 點亮光點
+                                    dot.classList.add('glow-receive');
+                                    // 5秒後柔和地恢復原狀
+                                    setTimeout(() => {
+                                        dot.classList.remove('glow-receive');
+                                    }, 5000);
+                                }
+                            }
+                        }, delay); 
+                    });
+                }
             }
         }
 
-        // 求助信號 (SOS)
+        // SOS 求助邏輯與共情迴圈 (Empathy Loop)
         function openSosModal() { 
             document.getElementById('sosModal').classList.remove('hidden'); 
-            document.getElementById('sosStruggleInput').value = '';
+            if(document.getElementById('sosStruggleInput')) document.getElementById('sosStruggleInput').value = ''; 
+            
+            // 互動式教學：如果正在 Step 2，且用戶點開了 SOS 視窗，教學氣泡自動進入 Step 3
+            const tutBox = document.getElementById('inMapTutorial');
+            if (tutBox && !tutBox.classList.contains('hidden') && currentTutorialStep === 2) {
+                nextTutorialStep();
+            }
         }
         function closeSosModal() { document.getElementById('sosModal').classList.add('hidden'); }
 
         function sendSosWave() {
-            const struggleMsg = document.getElementById('sosStruggleInput').value.trim();
+            const struggleInput = document.getElementById('sosStruggleInput');
+            const struggleMsg = struggleInput ? struggleInput.value.trim() : '';
             closeSosModal();
             const targetLatLng = userLatLng || map.getCenter();
 
-            // 發送暖橘色求助波紋
-            const sosIcon = L.divIcon({
-                className: 'custom-ripple-icon',
-                html: '<div class="ripple-wrapper"><div class="sos-ripple-core"></div><div class="sos-ripple-ring"></div><div class="sos-ripple-ring" style="animation-delay: 0.8s"></div></div>',
-                iconSize: [200, 200],
-                iconAnchor: [100, 100]
-            });
-
+            // 發送大範圍橘色波紋
+            const sosIcon = L.divIcon({ className: 'custom-ripple-icon', html: '<div class="ripple-wrapper"><div class="sos-ripple-core"></div><div class="sos-ripple-ring"></div><div class="sos-ripple-ring" style="animation-delay: 0.8s"></div></div>', iconSize: [200, 200], iconAnchor: [100, 100] });
             const marker = L.marker(targetLatLng, { icon: sosIcon }).addTo(map);
             setTimeout(() => { map.removeLayer(marker); }, 4000);
             
-            // 讓代表用戶自己的光點永久變成暖橘色 SOS 狀態
+            // 將用戶自身光點變為橘色閃爍狀態
             if (userMarker) {
-                const sosUserIcon = L.divIcon({
-                    className: 'user-location-marker',
-                    html: '<div class="pulse-sos"></div>',
-                    iconSize: [30, 30]
-                });
+                const sosUserIcon = L.divIcon({ className: 'user-location-marker', html: '<div class="pulse-sos"></div>', iconSize: [30, 30] });
                 userMarker.setIcon(sosUserIcon);
             }
 
-            // 顯示溫暖回饋 Toast
-            const toast = document.getElementById('receiveToast');
-            document.getElementById('receiveIcon').innerText = '🫂';
-            document.getElementById('receiveTitle').innerText = '求助信號已發出';
-            document.getElementById('receiveTitle').className = 'text-[9px] text-orange-400 tracking-widest uppercase font-semibold';
-            toast.classList.replace('border-brandLime/40', 'border-orange-400/40');
-            
-            // 處理自定義留言與後台攔截
+            // 發送系統提示與寫入後台
             if (struggleMsg) {
-                document.getElementById('receiveText').innerText = `已向世界傳達：「${struggleMsg}」。請記住，總有人在乎你。`;
-                if(typeof addAdminLog === 'function') addAdminLog(`截獲用戶 SOS 求助留言: "${struggleMsg}"`);
+                spawnToast('🫂', '求助信號已發出', 'text-[9px] text-orange-400 tracking-widest uppercase font-semibold', `已向世界傳達：「${struggleMsg}」。請記住，總有人在乎你。`, '', 'border-orange-400/40');
+                addAdminLog(`截獲用戶 SOS 求助留言: "${struggleMsg}"`);
             } else {
-                document.getElementById('receiveText').innerText = '波紋已向周圍擴散。請記住，世界上總有人在乎你。';
-                if(typeof addAdminLog === 'function') addAdminLog(`截獲用戶 SOS 求助 (無留言)`);
+                spawnToast('🫂', '求助信號已發出', 'text-[9px] text-orange-400 tracking-widest uppercase font-semibold', '波紋已向周圍擴散。請記住，世界上總有人在乎你。', '', 'border-orange-400/40');
+                addAdminLog(`截獲用戶 SOS 求助 (無留言)`);
             }
-            
-            toast.classList.remove('opacity-0', '-translate-y-10', 'pointer-events-none');
-            setTimeout(() => { 
-                toast.classList.add('opacity-0', '-translate-y-10', 'pointer-events-none'); 
-                // Reset styling for normal waves
-                setTimeout(() => {
-                    document.getElementById('receiveIcon').innerText = '〰️';
-                    document.getElementById('receiveTitle').innerText = '收到遠方的共鳴';
-                    document.getElementById('receiveTitle').className = 'text-[9px] text-brandLime tracking-widest uppercase font-semibold';
-                    toast.classList.replace('border-orange-400/40', 'border-brandLime/40');
-                }, 1000);
-            }, 6000);
 
-            // ================= 新增：社群溫暖回饋模擬 (Community Support) =================
-            // 延遲 12 秒後，模擬收到來自遠方陌生人的安慰
+            // 模擬社群共情迴圈 (陌生人安撫 - 12秒後觸發)
             setTimeout(() => {
-                if (document.getElementById('stateActiveRefuge').classList.contains('hidden')) return; // 確保用戶還在避難所內
-                
-                document.getElementById('receiveIcon').innerText = '🫂';
-                document.getElementById('receiveTitle').innerText = '來自遠方的溫暖';
-                document.getElementById('receiveTitle').className = 'text-[9px] text-orange-400 tracking-widest uppercase font-semibold';
-                document.getElementById('receiveText').innerText = '「無論你正在經歷什麼，深呼吸，我們都在這裡陪你。」—— 來自 東京 的同行者';
-                toast.classList.replace('border-brandLime/40', 'border-orange-400/40');
-                
-                toast.classList.remove('opacity-0', '-translate-y-10', 'pointer-events-none');
-                
-                setTimeout(() => { 
-                    toast.classList.add('opacity-0', '-translate-y-10', 'pointer-events-none'); 
-                    setTimeout(() => {
-                        document.getElementById('receiveIcon').innerText = '〰️';
-                        document.getElementById('receiveTitle').innerText = '收到遠方的共鳴';
-                        document.getElementById('receiveTitle').className = 'text-[9px] text-brandLime tracking-widest uppercase font-semibold';
-                        toast.classList.replace('border-orange-400/40', 'border-brandLime/40');
-                    }, 1000);
-                }, 6000);
+                if (document.getElementById('stateActiveRefuge').classList.contains('hidden')) return; 
+                spawnToast('🫂', '來自 東京 的同行者', 'text-[9px] text-orange-400 tracking-widest uppercase font-semibold', '「無論你正在經歷什麼，深呼吸，我們都在這裡陪你。」', '無論你在經歷什麼，我們都在這裡。', 'border-orange-400/40');
             }, 12000);
 
-            // 延遲 26 秒後，收到第二個來自遠方的共鳴
+            // 第二波共情迴圈 (26秒後觸發)
             setTimeout(() => {
-                if (document.getElementById('stateActiveRefuge').classList.contains('hidden')) return;
-                
-                document.getElementById('receiveIcon').innerText = '✨';
-                document.getElementById('receiveTitle').innerText = '微弱的共鳴';
-                document.getElementById('receiveTitle').className = 'text-[9px] text-brandLime tracking-widest uppercase font-semibold';
-                document.getElementById('receiveText').innerText = '「一切都會慢慢好起來的。明天見。」—— 來自 倫敦 的同行者';
-                toast.classList.replace('border-orange-400/40', 'border-brandLime/40');
-                
-                toast.classList.remove('opacity-0', '-translate-y-10', 'pointer-events-none');
-                
-                setTimeout(() => { 
-                    toast.classList.add('opacity-0', '-translate-y-10', 'pointer-events-none'); 
-                }, 5000);
+                if (document.getElementById('stateActiveRefuge').classList.contains('hidden')) return; 
+                spawnToast('🫂', '來自 倫敦 的同行者', 'text-[9px] text-orange-400 tracking-widest uppercase font-semibold', '「世界很大，但你並不孤單，我在這裡為你祈禱。」', '世界很大，你並不孤單。', 'border-orange-400/40');
             }, 26000);
         }
 
-        // ================= 自動化生命網路 (幽靈多人模式) =================
+        // 自動化生命網路 (模擬他人發送波紋)
         let networkActivityInterval;
+        let messageInterval;
         function startNetworkActivity() {
-            const msgs = ["今天辛苦了，早點休息。", "我在倫敦陪你一起發呆。", "深呼吸，把煩惱吐出去。", "一切都是最好的安排。"];
-            
-            // 每 6 到 8 秒，隨機一個光點會產生波紋
+            // 海量多語系問候資料庫 (擴展真實感)
+            const globalMessages = [
+                { text: "今日もお疲れ様。ここで一緒に休もう。", trans: "今天也辛苦了。在這裡一起休息吧。", loc: "東京" },
+                { text: "You are not alone in this silence.", trans: "在這片寧靜中，你並不孤單。", loc: "倫敦" },
+                { text: "Respire. Tout ira bien.", trans: "深呼吸。一切都會好起來的。", loc: "巴黎" },
+                { text: "잠시 내려놓아도 괜찮아요.", trans: "暫時放下也沒關係。", loc: "首爾" },
+                { text: "Estoy aquí contigo.", trans: "我在這裡陪著你。", loc: "馬德里" },
+                { text: "Take your time. The world can wait.", trans: "慢慢來。世界可以等等。", loc: "紐約" },
+                { text: "一切都是最好的安排。", trans: "", loc: "香港" },
+                { text: "Es wird alles gut.", trans: "一切都會好起來的。", loc: "柏林" },
+                { text: "Respira, mañana será otro día.", trans: "深呼吸，明天又是新的一天。", loc: "布宜諾斯艾利斯" },
+                { text: "Tu n'es pas seul(e).", trans: "你不是一個人。", loc: "蒙特婁" },
+                { text: "비가 온 뒤에 땅이 굳는다.", trans: "風雨過後會更好。", loc: "釜山" },
+                { text: "Gönn dir eine Pause.", trans: "給自己放個假吧。", loc: "慕尼黑" },
+                { text: "Tutto andrà bene.", trans: "一切都會順利的。", loc: "羅馬" },
+                { text: "It's okay to pause.", trans: "按下暫停鍵也沒關係。", loc: "雪梨" },
+                { text: "Take a deep breath. You're doing your best.", trans: "深呼吸。你已經做得很好了。", loc: "多倫多" },
+                { text: "無理しないでね。", trans: "請不要太勉強自己了。", loc: "大阪" },
+                { text: "O mundo pode esperar.", trans: "世界可以等等。", loc: "聖保羅" },
+                { text: "We are all under the same sky.", trans: "我們都在同一片星空下。", loc: "洛杉磯" },
+                { text: "慢慢來，沒關係的。", trans: "", loc: "台北" },
+                { text: "Det ordnar sig.", trans: "事情總會解決的。", loc: "斯德哥爾摩" }
+            ];
+
+            // 視覺波紋 (每 8 秒)
             networkActivityInterval = setInterval(() => {
                 if(!map || companionMarkers.length === 0) return;
-                
-                // 隨機挑選一個同行者
                 const randomUser = companionMarkers[Math.floor(Math.random() * companionMarkers.length)];
-                
-                // 大多數是普通波紋，極少數是求助波紋
                 const isSosWave = Math.random() > 0.92; 
-                
                 const rippleClass = isSosWave ? 'sos-ripple-core' : 'ripple-core';
                 const ringClass = isSosWave ? 'sos-ripple-ring' : 'ripple-ring';
                 
-                const waveIcon = L.divIcon({
-                    className: 'custom-ripple-icon',
-                    html: `<div class="ripple-wrapper"><div class="${rippleClass}"></div><div class="${ringClass}"></div><div class="${ringClass}" style="animation-delay: 0.8s"></div></div>`,
-                    iconSize: [200, 200],
-                    iconAnchor: [100, 100]
-                });
-                
+                const waveIcon = L.divIcon({ className: 'custom-ripple-icon', html: `<div class="ripple-wrapper"><div class="${rippleClass}"></div><div class="${ringClass}"></div><div class="${ringClass}" style="animation-delay: 0.8s"></div></div>`, iconSize: [200, 200], iconAnchor: [100, 100] });
                 const waveMarker = L.marker([randomUser.lat, randomUser.lng], { icon: waveIcon }).addTo(map);
                 setTimeout(() => { map.removeLayer(waveMarker); }, 4000);
-
-                // 有 30% 的機率，普通的波紋會伴隨頂部的文字通知
-                if(!isSosWave && Math.random() > 0.7) {
-                    const toast = document.getElementById('receiveToast');
-                    document.getElementById('receiveText').innerText = msgs[Math.floor(Math.random() * msgs.length)];
-                    toast.classList.remove('opacity-0', '-translate-y-10', 'pointer-events-none');
-                    setTimeout(() => { toast.classList.add('opacity-0', '-translate-y-10', 'pointer-events-none'); }, 4000);
-                }
             }, 8000); 
+
+            // 多語系文字共鳴 (每 60 秒)
+            messageInterval = setInterval(() => {
+                if (document.getElementById('stateActiveRefuge').classList.contains('hidden')) return;
+                
+                // 隨機抽取一則多國語言問候
+                const msgData = globalMessages[Math.floor(Math.random() * globalMessages.length)];
+                
+                // 呼叫全新的堆疊系統，停留 60000 毫秒 (1分鐘)
+                spawnToast('〰️', `來自 ${msgData.loc} 的同行者`, 'text-[9px] text-brandLime tracking-widest uppercase font-semibold', `「${msgData.text}」`, msgData.trans, 'border-brandLime/40');
+                
+            }, 60000); // 60000 毫秒 = 1 分鐘
         }
 
-        // ================= 呼吸冥想 =================
+
+        /* ==========================================
+           === JS: Web Audio 音效與計時器管理 ===
+           ========================================== */
+        let audioCtx, ambientGain, lowpassFilter, noiseNode, breatheLFO, lfoGain;
+        let isAudioMuted = false;
+
+        function initAudio() {
+            if (audioCtx) return;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const bufferSize = 2 * audioCtx.sampleRate;
+                const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+                
+                noiseNode = audioCtx.createBufferSource(); noiseNode.buffer = noiseBuffer; noiseNode.loop = true;
+                lowpassFilter = audioCtx.createBiquadFilter(); lowpassFilter.type = 'lowpass'; lowpassFilter.frequency.value = 400; 
+                ambientGain = audioCtx.createGain(); ambientGain.gain.value = 0; 
+                
+                noiseNode.connect(lowpassFilter); lowpassFilter.connect(ambientGain); ambientGain.connect(audioCtx.destination);
+                
+                breatheLFO = audioCtx.createOscillator(); breatheLFO.frequency.value = 1 / 8; // 8秒呼吸
+                lfoGain = audioCtx.createGain(); lfoGain.gain.value = 250; 
+                breatheLFO.connect(lfoGain); lfoGain.connect(lowpassFilter.frequency);
+                
+                noiseNode.start(); breatheLFO.start();
+            } catch (e) { console.log("Audio Init Failed", e); }
+        }
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const btn = document.getElementById('audioToggleBtn');
+            if (isAudioMuted) {
+                btn.innerHTML = '<span>🔇</span> 沉浸音效: 關';
+                if (ambientGain && audioCtx) { ambientGain.gain.cancelScheduledValues(audioCtx.currentTime); ambientGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1); }
+            } else {
+                btn.innerHTML = '<span>🔊</span> 沉浸音效: 開';
+                if (ambientGain && audioCtx) { ambientGain.gain.cancelScheduledValues(audioCtx.currentTime); ambientGain.gain.linearRampToValueAtTime(0.8, audioCtx.currentTime + 1); }
+            }
+        }
+
+        function startAmbientMusic() { if(!audioCtx) initAudio(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); if(ambientGain && audioCtx && !isAudioMuted) { ambientGain.gain.cancelScheduledValues(audioCtx.currentTime); ambientGain.gain.linearRampToValueAtTime(0.8, audioCtx.currentTime + 3); } }
+        function stopAmbientMusic() { if(audioCtx && ambientGain) { ambientGain.gain.cancelScheduledValues(audioCtx.currentTime); ambientGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 2); } }
+
         let breathePhaseTimer;
         function startBreathingGuide() {
-            const el = document.getElementById('breatheGuideText');
-            let is吸 = true;
-            el.innerText = "慢慢吸氣...";
-            breathePhaseTimer = setInterval(() => {
-                el.style.opacity = 0;
-                setTimeout(() => {
-                    is吸 = !is吸;
-                    el.innerText = is吸 ? "慢慢吸氣..." : "緩緩呼氣...";
-                    el.style.opacity = 1;
-                }, 1000); 
-            }, 4000); 
+            const el = document.getElementById('breatheGuideText'); let is吸 = true; el.innerText = "慢慢吸氣...";
+            breathePhaseTimer = setInterval(() => { el.style.opacity = 0; setTimeout(() => { is吸 = !is吸; el.innerText = is吸 ? "慢慢吸氣..." : "緩緩呼氣..."; el.style.opacity = 1; }, 1000); }, 4000); 
         }
-        
         function stopBreathingGuide() { clearInterval(breathePhaseTimer); }
-
-        function triggerSanctuaryStart() {
-            document.getElementById('mainHeader').classList.add('opacity-0', 'pointer-events-none');
-            document.getElementById('stateBreathing').classList.add('hidden');
-            document.getElementById('map-container').classList.add('active');
-            document.getElementById('stateActiveRefuge').classList.remove('hidden');
-            
-            initLeafletMap();
-            if (map) setTimeout(() => map.invalidateSize(), 100);
-
-            startAmbientMusic(); 
-            startBreathingGuide();
-            startNetworkActivity(); // 啟動自動化生命網路
-
-            secondsRemaining = 300;
-            updateTimerDisplay();
-            safeTimer = setInterval(() => {
-                secondsRemaining--;
-                updateTimerDisplay();
-                if (secondsRemaining <= 0) fastForwardTimer();
-            }, 1000);
-        }
 
         function updateTimerDisplay() {
             const m = Math.floor(secondsRemaining / 60).toString().padStart(2, '0');
@@ -1099,12 +1023,8 @@
         }
 
         function fastForwardTimer() {
-            clearInterval(safeTimer);
-            stopAmbientMusic();
-            stopBreathingGuide();
-            clearInterval(networkActivityInterval); // 停止自動化網路
+            clearInterval(safeTimer); stopAmbientMusic(); stopBreathingGuide(); clearInterval(networkActivityInterval); clearInterval(messageInterval);
             document.getElementById('phraseCapsule').classList.add('hidden');
-            
             if(!isPro) localStorage.setItem('zero_cooldown', Date.now() + (2 * 3600 * 1000));
             resetApp();
         }
@@ -1116,6 +1036,12 @@
             document.getElementById('mainHeader').classList.remove('opacity-0', 'pointer-events-none');
             document.getElementById('btnFill').style.height = '0%';
             
+            // 如果用戶發過求助，將自己橘色的光點重置回綠色
+            if (userMarker) {
+                const userIcon = L.divIcon({ className: 'user-location-marker', html: '<div class="pulse"></div>', iconSize: [30, 30] });
+                userMarker.setIcon(userIcon);
+            }
+
             const ring = document.getElementById('ringOuter');
             const icon = document.getElementById('centerIcon');
             const inst = document.getElementById('instructionText');
@@ -1123,20 +1049,19 @@
             if (checkCooldown()) {
                 updateCooldownUI();
             } else {
-                ring.classList.remove('border-white/20', 'bg-white/5');
-                ring.classList.add('border-brandLime/40', 'bg-brandDark');
-                icon.innerText = "0";
-                icon.classList.remove('text-white/50');
-                icon.classList.add('text-brandLime');
+                ring.classList.remove('border-white/20', 'bg-white/5'); ring.classList.add('border-brandLime/40', 'bg-brandDark');
+                icon.innerText = "0"; icon.classList.remove('text-white/50'); icon.classList.add('text-brandLime');
                 inst.innerText = "長按 1.5 秒進入避難所";
                 document.getElementById('cooldownText').classList.add('hidden');
                 document.getElementById('unlockBtn').classList.add('hidden');
+                document.getElementById('tutorialBtn').classList.remove('hidden');
             }
         }
 
+        // 初始化檢查
         if(isPro) applyProUI();
         updateCooldownUI();
-
+        
     </script>
 </body>
 </html>
