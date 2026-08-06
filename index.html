@@ -678,6 +678,11 @@
                 userMarker.setIcon(sosUserIcon);
             }
 
+            // 更新真實網路狀態為 SOS
+            if (window.broadcastPresenceToFirebase && userLatLng) {
+                window.broadcastPresenceToFirebase(userLatLng[0], userLatLng[1], true);
+            }
+
             // 發送系統提示與寫入後台
             if (struggleMsg) {
                 spawnToast('🫂', '求助信號已發出', 'text-[9px] text-orange-400 tracking-widest uppercase font-semibold', `已向世界傳達：「${struggleMsg}」。請記住，總有人在乎你。`, '', 'border-orange-400/40');
