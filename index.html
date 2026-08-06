@@ -687,6 +687,11 @@
                 addAdminLog(`截獲用戶 SOS 求助 (無留言)`);
             }
 
+            // 廣播 SOS 給其他真實裝置
+            const sendLat = userLatLng ? userLatLng[0] : targetLatLng.lat;
+            const sendLng = userLatLng ? userLatLng[1] : targetLatLng.lng;
+            broadcastEvent('SOS', sendLat, sendLng, struggleMsg);
+
             // 模擬社群共情迴圈 (陌生人安撫 - 12秒後觸發)
             setTimeout(() => {
                 if (document.getElementById('stateActiveRefuge').classList.contains('hidden')) return; 
