@@ -382,54 +382,13 @@
         let map = null;
         let pendingClickLatLng = null;
         let userLatLng = null;
-        let userMarker = null; // 追蹤用戶自身光點，用於變更顏色
+        let userMarker = null; 
         let companionMarkers = []; 
-        let liveUsers = 128; // 全局稀缺人數
+        let liveUsers = 128; 
         
-        // 步進教學變數
         let currentTutorialStep = 1;
 
-        // ==========================================
-        // === JS: 動態堆疊通知系統 (Toast Container) ===
-        // ==========================================
-        function spawnToast(icon, title, titleClass, text, transText = '', borderClass = '') {
-            const container = document.getElementById('toastContainer');
-            if (!container) return;
-
-            const toast = document.createElement('div');
-            toast.className = `frosted-glass px-6 py-4 rounded-2xl shadow-2xl transition-all duration-700 opacity-0 -translate-y-4 pointer-events-none flex items-center gap-4 border ${borderClass} min-w-[280px] w-full max-w-sm`;
-            
-            let transHtml = '';
-            if (transText) {
-                transHtml = `<span class="text-[10px] text-white/50 mt-0.5 tracking-widest block">${transText}</span>`;
-            }
-
-            toast.innerHTML = `
-                <span class="text-2xl flex-shrink-0">${icon}</span>
-                <div class="flex flex-col gap-1 w-full">
-                    <span class="${titleClass} font-semibold">${title}</span>
-                    <span class="text-sm font-light text-white leading-snug break-words">${text}</span>
-                    ${transHtml}
-                </div>
-            `;
-            
-            container.prepend(toast);
-
-            // Trigger animation in
-            setTimeout(() => {
-                toast.classList.remove('opacity-0', '-translate-y-4');
-            }, 50);
-
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                toast.classList.add('opacity-0', '-translate-y-4');
-                setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 700);
-            }, 5000);
-        }
-
-        // ==========================================
-        // === JS: 敏感詞過濾系統 (Profanity Filter) ===
-        // ==========================================
+        // 敏感詞過濾器
         const bannedWords = [
             'fuck', 'bitch', 'shit', '死', '殺', '垃圾', '廢物', '幹', '靠', '去死', '笨蛋',
             '屌', '𨳒', '𨳊', '撚', '𨶙', '𨳍', '閪', '仆街', '冚家', '老母', 'dllm', '操', '肏', 
@@ -437,23 +396,150 @@
         ];
         function containsBadWords(text) {
             if (!text) return false;
-            // 轉小寫以防阻擋 Dllm, DLLM 等變體
             const lowerText = text.toLowerCase();
             return bannedWords.some(word => lowerText.includes(word));
         }
 
-        // 幽默的敏感詞警告語句庫
         const funnyWarnings = [
-            '避難所感應到高強度火氣！這裡只接受溫柔的波紋，請換個優雅點的字眼啦～ 🍵',
-            '哎呀，你的詞彙太生猛，避難所的防護罩差點被擊碎。試著換個溫和點的說法？ ✨',
-            '雖然世界很煩，但我們在這裡要保持仙氣。深呼吸，換個詞彙好嗎？ 🧘‍♂️',
-            '嗶嗶！偵測到破壞平靜的字眼。我們這邊是走佛系路線的，重新輸入一次好嗎？ 🌿',
-            '大佬，我哋喺度做緊心靈SPA，唔係 Rap Battle。溫柔啲啦好無？ 🕊️'
+            '大佬，我哋喺度做緊心靈SPA，唔係 Rap Battle。溫柔啲啦好無？ 🕊️',
+            '避難所感應到高強度火氣！這裡只接受溫柔的波紋，換個優雅點的字眼啦～ 🍵',
+            '嗶嗶！偵測到破壞平靜的字眼。我們這邊是走佛系路線的，重新輸入好嗎？ 🌿'
         ];
+        function getFunnyWarning() { return funnyWarnings[Math.floor(Math.random() * funnyWarnings.length)]; }
 
-        function getFunnyWarning() {
-            return funnyWarnings[Math.floor(Math.random() * funnyWarnings.length)];
+        // 動態堆疊通知系統
+        function spawnToast(icon, title, titleClass, text, transText = '', borderClass = '') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `frosted-glass px-6 py-4 rounded-2xl shadow-2xl transition-all duration-700 opacity-0 -translate-y-4 flex items-center gap-4 border ${borderClass} min-w-[280px] w-full max-w-sm`;
+            
+            let transHtml = transText ? `<span class="text-[10px] text-white/50 mt-0.5 tracking-widest block">${transText}</span>` : '';
+            toast.innerHTML = `<span class="text-2xl flex-shrink-0">${icon}</span><div class="flex flex-col gap-1 w-full"><span class="${titleClass} font-semibold">${title}</span><span class="text-sm font-light text-white leading-snug break-words">${text}</span>${transHtml}</div>`;
+            container.prepend(toast);
+
+            setTimeout(() => { toast.classList.remove('opacity-0', '-translate-y-4'); }, 50);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-4');
+                setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 700);
+            }, 5000); // 5秒後消失
         }
+
+        /* ==========================================
+           === JS: 真實世界多人連線模組 (GitHub Pages 相容版) ===
+           ========================================== */
+        let mqttClient = null;
+        const ZERO_TOPIC = "zero_sanctuary_global_v2"; // 全球廣播頻道
+        const myClientId = 'zero_' + Math.random().toString(16).substr(2, 8);
+        let realUserMarkers = {};
+
+        function initRealtimeNetwork() {
+            if (mqttClient) return;
+            // 使用 EMQX 公共安全微波道，支援 GitHub 的 https 協議
+            const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
+            
+            console.log("正在連接至真實世界...");
+            mqttClient = mqtt.connect(brokerUrl, { clientId: myClientId });
+
+            mqttClient.on('connect', () => {
+                console.log("全球避難所網路連接成功！");
+                mqttClient.subscribe(ZERO_TOPIC, (err) => {
+                    if (!err && userLatLng) {
+                        window.broadcastPresenceToFirebase(userLatLng[0], userLatLng[1], false);
+                    }
+                });
+            });
+
+            mqttClient.on('message', (topic, message) => {
+                try {
+                    const data = JSON.parse(message.toString());
+                    if (data.clientId === myClientId || !map) return; // 忽略自己發送的訊號
+
+                    const latLng = [data.lat, data.lng];
+
+                    if (data.action === 'PRESENCE') {
+                        // 渲染真實用戶（帶有純白高光的標記）
+                        const dotClass = data.isSos ? 'dot-gold' : 'dot-lime';
+                        const shadowClass = data.isSos ? 'shadow-[0_0_15px_3px_rgba(255,179,71,0.8)]' : 'shadow-[0_0_15px_3px_rgba(255,255,255,0.8)]';
+                        
+                        if (realUserMarkers[data.clientId]) {
+                            realUserMarkers[data.clientId].setLatLng(latLng);
+                        } else {
+                            const customIcon = L.divIcon({ 
+                                className: 'companion-marker', 
+                                html: `<div class="${dotClass} ${shadowClass} animate-pulse" style="width: 6px; height: 6px; background-color: #FFF;"></div>`, 
+                                iconSize: [12, 12] 
+                            });
+                            const marker = L.marker(latLng, { icon: customIcon }).addTo(map);
+                            realUserMarkers[data.clientId] = marker;
+                            
+                            // 真實用戶 10 分鐘未活動則自動移除
+                            setTimeout(() => {
+                                if (map && realUserMarkers[data.clientId]) {
+                                    map.removeLayer(realUserMarkers[data.clientId]);
+                                    delete realUserMarkers[data.clientId];
+                                }
+                            }, 10 * 60 * 1000);
+                        }
+                    } 
+                    else if (data.action === 'WAVE' || data.action === 'SOS') {
+                        // 1. 產生真實的波紋
+                        const isSosWave = (data.action === 'SOS');
+                        const rippleClass = isSosWave ? 'sos-ripple-core' : 'ripple-core';
+                        const ringClass = isSosWave ? 'sos-ripple-ring' : 'ripple-ring';
+                        
+                        const waveIcon = L.divIcon({ 
+                            className: 'custom-ripple-icon', 
+                            html: `<div class="ripple-wrapper"><div class="${rippleClass}"></div><div class="${ringClass}"></div><div class="${ringClass}" style="animation-delay: 0.8s"></div></div>`, 
+                            iconSize: [200, 200], iconAnchor: [100, 100] 
+                        });
+                        const waveMarker = L.marker(latLng, { icon: waveIcon }).addTo(map);
+                        setTimeout(() => { if(map) map.removeLayer(waveMarker); }, 4000);
+
+                        // 2. 點亮波紋範圍內的光點
+                        const maxRadiusPixels = 90;
+                        const centerPoint = map.latLngToContainerPoint(latLng);
+                        companionMarkers.forEach((comp) => {
+                            const compPoint = map.latLngToContainerPoint([comp.lat, comp.lng]);
+                            const distPx = Math.sqrt(Math.pow(centerPoint.x - compPoint.x, 2) + Math.pow(centerPoint.y - compPoint.y, 2));
+                            if (distPx <= maxRadiusPixels) {
+                                const delay = (distPx / maxRadiusPixels) * 1200 + 100;
+                                setTimeout(() => {
+                                    if (comp.marker && comp.marker.getElement()) {
+                                        const dot = comp.marker.getElement().firstElementChild;
+                                        if (dot) {
+                                            dot.classList.add('glow-receive');
+                                            setTimeout(() => { dot.classList.remove('glow-receive'); }, 5000);
+                                        }
+                                    }
+                                }, delay); 
+                            }
+                        });
+
+                        // 3. 顯示收到真實訊息的通知
+                        if (data.action === 'SOS') {
+                            spawnToast('🫂', `真實同行者求助`, 'text-[9px] text-orange-400 tracking-widest uppercase font-semibold', data.msg ? `「${data.msg}」` : '有人正在經歷困難，波紋已經抵達。', '', 'border-orange-400/40');
+                        } else {
+                            spawnToast('〰️', `來自真實世界的波紋`, 'text-[9px] text-brandLime tracking-widest uppercase font-semibold', `「${data.msg}」`, '', 'border-brandLime/40');
+                        }
+                    }
+                } catch (e) {
+                    console.error("Network error:", e);
+                }
+            });
+        }
+
+        // 對外暴露的廣播函數
+        window.broadcastPresenceToFirebase = function(lat, lng, isSos) {
+            if (!mqttClient || !mqttClient.connected) return;
+            mqttClient.publish(ZERO_TOPIC, JSON.stringify({ action: 'PRESENCE', clientId: myClientId, lat: lat, lng: lng, isSos: isSos }));
+        };
+
+        window.realtimeBroadcast = function(type, lat, lng, msg) {
+            if (!mqttClient || !mqttClient.connected) return;
+            mqttClient.publish(ZERO_TOPIC, JSON.stringify({ action: type, clientId: myClientId, lat: lat, lng: lng, msg: msg }));
+        };
 
         /* ==========================================
            === JS: Leaflet 地圖與光點邏輯 ===
