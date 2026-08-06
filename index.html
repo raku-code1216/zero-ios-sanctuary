@@ -394,288 +394,70 @@
         // 步進教學變數
         let currentTutorialStep = 1;
 
-        // 首頁輪播字句
-        const quotes = ["世界很吵，這裡很靜。", "放下焦慮，深呼吸。", "奪回屬於你的 15 分鐘。"];
-        let quoteIndex = 0;
-        setInterval(() => {
-            const qEl = document.getElementById('quoteText');
-            if(qEl) {
-                qEl.style.opacity = 0;
-                setTimeout(() => { quoteIndex = (quoteIndex + 1) % quotes.length; qEl.innerText = quotes[quoteIndex]; qEl.style.opacity = 1; }, 1000);
-            }
-        }, 4000);
-
-
-        /* ==========================================
-           === JS: UI 彈窗 (新手指南、登入、冷卻) ===
-           ========================================== */
-        function openTutorial() { document.getElementById('tutorialModal').classList.remove('hidden'); }
-        function closeTutorial() { document.getElementById('tutorialModal').classList.add('hidden'); }
-
-        function openLoginModal() { 
-            document.getElementById('loginModal').classList.remove('hidden'); 
-            document.getElementById('emailInput').value = '';
-        }
-        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
-        
-        // 冷卻時間邏輯 (防沉迷/商業轉化)
-        function checkCooldown() {
-            if (isPro) return false;
-            const cooldownUntil = localStorage.getItem('zero_cooldown');
-            return cooldownUntil && Date.now() < parseInt(cooldownUntil);
-        }
-
-        function updateCooldownUI() {
-            if (checkCooldown()) {
-                document.getElementById('instructionText').innerText = "避難所重置中";
-                document.getElementById('cooldownText').classList.remove('hidden');
-                document.getElementById('unlockBtn').classList.remove('hidden');
-                document.getElementById('tutorialBtn').classList.add('hidden');
-                
-                const icon = document.getElementById('centerIcon');
-                icon.innerText = "🔒"; icon.classList.remove('text-brandLime'); icon.classList.add('text-white/50');
-                const ring = document.getElementById('ringOuter');
-                ring.classList.remove('border-brandLime/40', 'bg-brandDark'); ring.classList.add('border-white/20', 'bg-white/5');
-                
-                const tick = () => {
-                    if(!checkCooldown()) { resetApp(); return; }
-                    const diff = parseInt(localStorage.getItem('zero_cooldown')) - Date.now();
-                    const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
-                    const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
-                    const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
-                    document.getElementById('cooldownText').innerText = `${h}:${m}:${s}`;
-                    if(!document.getElementById('cooldownText').classList.contains('hidden')) requestAnimationFrame(tick);
-                };
-                tick();
-            }
-        }
-
-        function applyProUI() {
-            document.getElementById('proBadge').classList.remove('hidden');
-            document.getElementById('userStatus').innerHTML = '<span class="text-[10px] text-brandDark font-bold uppercase tracking-widest bg-brandLime px-3 py-1.5 rounded-full shadow-lg shadow-brandLime/20">已登入 (PRO)</span>';
-        }
-
-
-        /* ==========================================
-           === JS: 董事長數據中心 (Admin Dashboard) ===
-           ========================================== */
-        let adminUpdateInterval;
-        let simulatedTotalUsers = 12458;
-
         // ==========================================
-        // === JS: 全局通知與堆疊系統 ===
+        // === JS: 動態堆疊通知系統 (Toast Container) ===
         // ==========================================
-        function spawnToast(icon, title, titleClass, text, trans, borderClass) {
+        function spawnToast(icon, title, titleClass, text, transText = '', borderClass = '') {
             const container = document.getElementById('toastContainer');
-            if(!container) return;
+            if (!container) return;
 
             const toast = document.createElement('div');
-            toast.className = `frosted-glass px-6 py-4 rounded-2xl shadow-2xl transition-all duration-700 pointer-events-none flex items-center gap-4 border ${borderClass} min-w-[280px] opacity-0 -translate-y-4`;
+            toast.className = `frosted-glass px-6 py-4 rounded-2xl shadow-2xl transition-all duration-700 opacity-0 -translate-y-4 pointer-events-none flex items-center gap-4 border ${borderClass} min-w-[280px] w-full max-w-sm`;
             
-            let html = `<span class="text-2xl">${icon}</span><div class="flex flex-col gap-1">`;
-            html += `<span class="${titleClass}">${title}</span>`;
-            html += `<span class="text-sm font-light text-white leading-snug">${text}</span>`;
-            if(trans) html += `<span class="text-[10px] text-white/50 mt-0.5 tracking-widest">${trans}</span>`;
-            html += `</div>`;
+            let transHtml = '';
+            if (transText) {
+                transHtml = `<span class="text-[10px] text-white/50 mt-0.5 tracking-widest block">${transText}</span>`;
+            }
+
+            toast.innerHTML = `
+                <span class="text-2xl flex-shrink-0">${icon}</span>
+                <div class="flex flex-col gap-1 w-full">
+                    <span class="${titleClass} font-semibold">${title}</span>
+                    <span class="text-sm font-light text-white leading-snug break-words">${text}</span>
+                    ${transHtml}
+                </div>
+            `;
             
-            toast.innerHTML = html;
             container.prepend(toast);
 
-            // Animate in
-            requestAnimationFrame(() => {
+            // Trigger animation in
+            setTimeout(() => {
                 toast.classList.remove('opacity-0', '-translate-y-4');
-                toast.classList.add('opacity-100', 'translate-y-0');
-            });
+            }, 50);
 
             // Auto remove after 60 seconds
             setTimeout(() => {
-                toast.classList.remove('opacity-100', 'translate-y-0');
                 toast.classList.add('opacity-0', '-translate-y-4');
-                setTimeout(() => { if(toast.parentNode) toast.remove(); }, 700);
+                setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 700);
             }, 60000);
         }
 
-        function processLogin() {
-            const email = document.getElementById('emailInput').value.trim();
-            if(!email) return;
-            
-            // 董事長專屬後台入口 (God Mode)
-            if(email === 's20141602@gmail.com') {
-                closeLoginModal();
-                document.getElementById('adminDashboard').classList.remove('hidden');
-                isPro = true; localStorage.setItem('zero_is_pro', 'true'); applyProUI();
-                startAdminDashboardUpdates();
-                return;
-            }
-
-            // 一般用戶登入 (解鎖 PRO)
-            isPro = true; localStorage.setItem('zero_is_pro', 'true');
-            closeLoginModal(); applyProUI(); resetApp(); 
+        // ==========================================
+        // === JS: 敏感詞過濾系統 (Profanity Filter) ===
+        // ==========================================
+        const bannedWords = [
+            'fuck', 'bitch', 'shit', '死', '殺', '垃圾', '廢物', '幹', '靠', '去死', '笨蛋',
+            '屌', '𨳒', '𨳊', '撚', '𨶙', '𨳍', '閪', '仆街', '冚家', '老母', 'dllm', '操', '肏', 
+            '媽的', '傻逼', '智障', '賤人', '婊子', '含撚', '笨柒', '小三', '白痴', '去死吧'
+        ];
+        function containsBadWords(text) {
+            if (!text) return false;
+            // 轉小寫以防阻擋 Dllm, DLLM 等變體
+            const lowerText = text.toLowerCase();
+            return bannedWords.some(word => lowerText.includes(word));
         }
 
-        function closeAdmin() {
-            document.getElementById('adminDashboard').classList.add('hidden');
-            clearInterval(adminUpdateInterval);
-            resetApp();
-        }
+        // 幽默的敏感詞警告語句庫
+        const funnyWarnings = [
+            '避難所感應到高強度火氣！這裡只接受溫柔的波紋，請換個優雅點的字眼啦～ 🍵',
+            '哎呀，你的詞彙太生猛，避難所的防護罩差點被擊碎。試著換個溫和點的說法？ ✨',
+            '雖然世界很煩，但我們在這裡要保持仙氣。深呼吸，換個詞彙好嗎？ 🧘‍♂️',
+            '嗶嗶！偵測到破壞平靜的字眼。我們這邊是走佛系路線的，重新輸入一次好嗎？ 🌿',
+            '大佬，我哋喺度做緊心靈SPA，唔係 Rap Battle。溫柔啲啦好無？ 🕊️'
+        ];
 
-        function startAdminDashboardUpdates() {
-            const updateTotal = () => {
-                // 模擬全網下載量增長
-                if(Math.random() > 0.6) simulatedTotalUsers += Math.floor(Math.random() * 3);
-                
-                const totalEl = document.getElementById('adminTotalUsers');
-                if(totalEl) totalEl.innerText = simulatedTotalUsers.toLocaleString();
-                
-                // 完全同步前台設定的 128 人 (加上微波函數)
-                const liveEl = document.getElementById('adminLiveUsers');
-                if(liveEl) liveEl.innerText = liveUsers.toLocaleString();
-
-                // 實時統計地圖上的 SOS 求助者
-                const sosCount = companionMarkers.filter(m => m.isSos).length;
-                const sosEl = document.getElementById('adminActiveSos');
-                if(sosEl) sosEl.innerText = sosCount.toString();
-            };
-            updateTotal(); 
-            adminUpdateInterval = setInterval(updateTotal, 2000);
-        }
-
-        function addAdminLog(msg) {
-            const container = document.getElementById('adminLogContainer');
-            if(!container) return;
-            const time = new Date().toLocaleTimeString();
-            const logEntry = document.createElement('div');
-            logEntry.className = 'text-orange-400 border-l-2 border-orange-500/50 pl-2';
-            logEntry.innerText = `[${time}] ${msg}`;
-            container.prepend(logEntry);
-        }
-
-
-        /* ==========================================
-           === JS: 長按觸發與進入避難所 ===
-           ========================================== */
-        let holdTimer, holdProgress = 0, safeTimer, secondsRemaining = 300;
-
-        function startHold(e) {
-            if(e) e.preventDefault();
-            if(checkCooldown()) return;
-            initAudio(); 
-            document.getElementById('instructionText').innerText = "卸載雜訊中...";
-            holdProgress = 0;
-            holdTimer = setInterval(() => {
-                holdProgress += 5;
-                document.getElementById('btnFill').style.height = holdProgress + '%';
-                if (holdProgress >= 100) { clearInterval(holdTimer); triggerSanctuaryStart(); }
-            }, 75);
-        }
-
-        function cancelHold(e) {
-            if(e) e.preventDefault();
-            clearInterval(holdTimer);
-            if (holdProgress < 100 && !checkCooldown()) {
-                document.getElementById('btnFill').style.height = '0%';
-                document.getElementById('instructionText').innerText = "長按 1.5 秒進入避難所";
-            }
-        }
-
-        function triggerSanctuaryStart() {
-            document.getElementById('mainHeader').classList.add('opacity-0', 'pointer-events-none');
-            document.getElementById('stateBreathing').classList.add('hidden');
-            
-            // 系統攔截通知 (App Blocking Simulation)
-            setTimeout(() => {
-                const blockToast = document.getElementById('blockToast');
-                if(blockToast) {
-                    blockToast.classList.remove('opacity-0', '-translate-y-10', 'pointer-events-none');
-                    setTimeout(() => { blockToast.classList.add('opacity-0', '-translate-y-10', 'pointer-events-none'); }, 4000);
-                }
-            }, 500);
-
-            document.getElementById('map-container').classList.add('active');
-            document.getElementById('stateActiveRefuge').classList.remove('hidden');
-            
-            initLeafletMap();
-            if (map) setTimeout(() => map.invalidateSize(), 100);
-
-            startAmbientMusic(); startBreathingGuide(); startNetworkActivity();
-
-            // 檢查是否看過地圖教學
-            if (!localStorage.getItem('zero_map_tutorial_seen')) {
-                showInMapTutorial();
-            } else {
-                startRefugeTimer(); // 看過就直接開始倒數
-            }
-        }
-        
-        // 避難所倒數計時邏輯 (分離出來以便教學結束後觸發)
-        function startRefugeTimer() {
-            secondsRemaining = 300; updateTimerDisplay();
-            safeTimer = setInterval(() => {
-                secondsRemaining--; updateTimerDisplay();
-                if (secondsRemaining <= 0) fastForwardTimer();
-            }, 1000);
-        }
-
-        /* === 地圖內步進式教學邏輯 === */
-        function showInMapTutorial() {
-            document.getElementById('inMapTutorial').classList.remove('hidden');
-            currentTutorialStep = 1;
-            updateTutorialUI();
-        }
-
-        function updateTutorialUI() {
-            const tutBox = document.getElementById('inMapTutorial');
-            const arrow = document.getElementById('tutorialArrow');
-            const badge = document.getElementById('tutorialStepBadge');
-            const title = document.getElementById('tutorialTitle');
-            const desc = document.getElementById('tutorialDesc');
-            const nextBtn = document.getElementById('tutorialNextBtn');
-            
-            badge.innerText = `Step ${currentTutorialStep} / 3`;
-
-            if (currentTutorialStep === 1) {
-                // Step 1: Center Map (點擊地圖)
-                tutBox.style.top = '50%'; tutBox.style.bottom = 'auto'; tutBox.style.left = '50%'; tutBox.style.transform = 'translate(-50%, -50%)';
-                arrow.classList.add('hidden');
-                badge.className = 'text-[9px] bg-brandLime text-black px-2 py-0.5 rounded font-bold tracking-widest uppercase';
-                title.innerText = '全球共鳴地圖'; title.className = 'text-sm text-brandLime font-light tracking-widest uppercase';
-                desc.innerHTML = '地圖上微弱的光點，是此刻世界各地與你一起避難的人。<br><br><strong class="text-white animate-pulse">👉 試著點擊地圖任意處</strong>，發送一圈無聲波紋。';
-                nextBtn.innerText = '或點擊繼續 (Next)';
-                tutBox.classList.remove('border-orange-500/40'); tutBox.classList.add('border-white/20');
-            } else if (currentTutorialStep === 2) {
-                // Step 2: Bottom SOS (點擊求助)
-                tutBox.style.top = 'auto'; tutBox.style.bottom = '160px'; tutBox.style.left = '50%'; tutBox.style.transform = 'translateX(-50%)';
-                arrow.classList.remove('hidden'); arrow.style.bottom = '-8px'; arrow.style.top = 'auto'; arrow.style.left = '50%'; arrow.style.transform = 'translateX(-50%) rotate(225deg)';
-                badge.className = 'text-[9px] bg-orange-400 text-black px-2 py-0.5 rounded font-bold tracking-widest uppercase';
-                title.innerText = '求助信標'; title.className = 'text-sm text-orange-400 font-light tracking-widest uppercase';
-                desc.innerHTML = '當你覺得無法承受時，讓世界知道。<br><br><strong class="text-white animate-pulse">👉 試著點擊下方的「發送求助」</strong>。';
-                nextBtn.innerText = '或點擊繼續 (Next)';
-                tutBox.classList.remove('border-white/20', 'border-brandLime/40'); tutBox.classList.add('border-orange-500/40');
-            } else if (currentTutorialStep === 3) {
-                // Step 3: Top Timer (準備沉浸)
-                tutBox.style.bottom = 'auto'; tutBox.style.top = '100px'; tutBox.style.left = '50%'; tutBox.style.transform = 'translateX(-50%)';
-                arrow.classList.remove('hidden'); arrow.style.bottom = 'auto'; arrow.style.top = '-8px'; arrow.style.left = '50%'; arrow.style.transform = 'translateX(-50%) rotate(45deg)';
-                badge.className = 'text-[9px] bg-brandLime text-black px-2 py-0.5 rounded font-bold tracking-widest uppercase';
-                title.innerText = '沉浸與倒數'; title.className = 'text-sm text-brandLime font-light tracking-widest uppercase';
-                desc.innerHTML = '接下來的 5 分鐘，沒有人可以打擾你。準備好後就開始吧。';
-                nextBtn.innerText = '開始避難 (Start)';
-                tutBox.classList.remove('border-orange-500/40'); tutBox.classList.add('border-brandLime/40');
-            }
-        }
-
-        function nextTutorialStep() {
-            if (currentTutorialStep < 3) {
-                currentTutorialStep++;
-                updateTutorialUI();
-            } else {
-                skipInMapTutorial();
-            }
-        }
-
-        function skipInMapTutorial() {
-            document.getElementById('inMapTutorial').classList.add('hidden');
-            localStorage.setItem('zero_map_tutorial_seen', 'true');
-            startRefugeTimer(); // 結束教學後才開始 5 分鐘倒數
+        function getFunnyWarning() {
+            return funnyWarnings[Math.floor(Math.random() * funnyWarnings.length)];
         }
 
         /* ==========================================
@@ -683,8 +465,24 @@
            ========================================== */
         function initLeafletMap() {
             if (map) return;
-            map = L.map('map-container', { zoomControl: false, attributionControl: false }).setView([22.3193, 114.1694], 4);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { maxZoom: 18 }).addTo(map);
+            
+            // 嚴格設定世界地圖邊界 (防止無限拖曳)
+            const worldBounds = [ [-90, -180], [90, 180] ];
+            
+            map = L.map('map-container', { 
+                zoomControl: false, 
+                attributionControl: false,
+                maxBounds: worldBounds, // 鎖死邊界
+                maxBoundsViscosity: 1.0 // 100% 邊界黏滯度，不允許彈性出界
+            }).setView([22.3193, 114.1694], 3); // 初始縮放改為 3，適應寬螢幕
+
+            // 加入 noWrap: true，徹底關閉水平無限輪迴
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { 
+                maxZoom: 18, 
+                minZoom: 2,
+                noWrap: true, 
+                bounds: worldBounds
+            }).addTo(map);
 
             spawnCompanionDots(); // 生成全球同行者
             locateUser();         // 定位用戶自身
@@ -759,23 +557,7 @@
                     setTimeout(() => { map.flyTo([lat, lng], 12, { duration: 3, easeLinearity: 0.1 }); }, 500);
                 }, (error) => {
                     // 優雅的定位失敗處理
-                    const toast = document.getElementById('receiveToast');
-                    document.getElementById('receiveIcon').innerText = '📍';
-                    document.getElementById('receiveTitle').innerText = '無法獲取位置';
-                    document.getElementById('receiveTitle').className = 'text-[9px] text-white/50 tracking-widest uppercase font-semibold';
-                    document.getElementById('receiveText').innerText = '已將您安置於避難所中心。若需顯示專屬光點，請允許存取位置權限。';
-                    toast.classList.replace('border-brandLime/40', 'border-white/20');
-                    toast.classList.remove('opacity-0', '-translate-y-10', 'pointer-events-none');
-                    
-                    setTimeout(() => { 
-                        toast.classList.add('opacity-0', '-translate-y-10', 'pointer-events-none'); 
-                        setTimeout(() => {
-                            document.getElementById('receiveIcon').innerText = '〰️';
-                            document.getElementById('receiveTitle').innerText = '收到遠方的共鳴';
-                            document.getElementById('receiveTitle').className = 'text-[9px] text-brandLime tracking-widest uppercase font-semibold';
-                            toast.classList.replace('border-white/20', 'border-brandLime/40');
-                        }, 1000);
-                    }, 5000);
+                    spawnToast('📍', '無法獲取位置', 'text-[9px] text-white/50 tracking-widest uppercase font-semibold', '已將您安置於避難所中心。若需顯示專屬光點，請允許存取位置權限。', '', 'border-white/20');
                 });
             }
         }
@@ -809,7 +591,13 @@
 
         function submitCustomWave() {
             const msg = document.getElementById('customWaveMsg').value.trim();
-            if(msg) { localStorage.setItem('zero_custom_phrase', msg); customPhrase = msg; sendWave(msg); }
+            if(msg) {
+                if(containsBadWords(msg)) {
+                    spawnToast('⚠️', '冷靜一下', 'text-[9px] text-orange-400 tracking-widest uppercase font-semibold', getFunnyWarning(), '', 'border-orange-400/40');
+                    return;
+                }
+                localStorage.setItem('zero_custom_phrase', msg); customPhrase = msg; sendWave(msg); 
+            }
         }
 
         function sendWave(text) {
@@ -874,6 +662,13 @@
         function sendSosWave() {
             const struggleInput = document.getElementById('sosStruggleInput');
             const struggleMsg = struggleInput ? struggleInput.value.trim() : '';
+
+            // 髒話與負面詞彙防護
+            if(containsBadWords(struggleMsg)) {
+                spawnToast('⚠️', '冷靜一下', 'text-[9px] text-orange-400 tracking-widest uppercase font-semibold', getFunnyWarning(), '', 'border-orange-400/40');
+                return;
+            }
+
             closeSosModal();
             const targetLatLng = userLatLng || map.getCenter();
 
@@ -958,7 +753,7 @@
                 // 隨機抽取一則多國語言問候
                 const msgData = globalMessages[Math.floor(Math.random() * globalMessages.length)];
                 
-                // 呼叫全新的堆疊系統，停留 60000 毫秒 (1分鐘)
+                // 呼叫全局堆疊系統
                 spawnToast('〰️', `來自 ${msgData.loc} 的同行者`, 'text-[9px] text-brandLime tracking-widest uppercase font-semibold', `「${msgData.text}」`, msgData.trans, 'border-brandLime/40');
                 
             }, 60000); // 60000 毫秒 = 1 分鐘
@@ -1020,6 +815,264 @@
             const m = Math.floor(secondsRemaining / 60).toString().padStart(2, '0');
             const s = (secondsRemaining % 60).toString().padStart(2, '0');
             document.getElementById('timerDisplay').innerText = `${m}:${s}`;
+        }
+
+        /* ==========================================
+           === JS: 介面互動、教學與冷卻邏輯 (Restored) ===
+           ========================================== */
+        let holdTimer;
+        let holdProgress = 0;
+        let safeTimer;
+        let secondsRemaining = 300;
+
+        function startHold(e) {
+            if (e) e.preventDefault();
+            if (checkCooldown()) {
+                spawnToast('⏳', '避難所冷卻中', 'text-[9px] text-brandLime tracking-widest uppercase font-semibold', '請等待冷卻時間結束，或升級解鎖無限次數。', '', 'border-brandLime/40');
+                return;
+            }
+
+            const fill = document.getElementById('btnFill');
+            const inst = document.getElementById('instructionText');
+            
+            if(inst) inst.innerText = "壓縮雜訊中...";
+            holdProgress = 0;
+            
+            holdTimer = setInterval(() => {
+                holdProgress += 10;
+                if(fill) fill.style.height = holdProgress + '%';
+                if (holdProgress >= 100) {
+                    clearInterval(holdTimer);
+                    triggerSanctuaryStart();
+                }
+            }, 150); // 長按 1.5 秒
+        }
+
+        function cancelHold(e) {
+            if (e) e.preventDefault();
+            clearInterval(holdTimer);
+            if (holdProgress < 100 && !checkCooldown()) {
+                const fill = document.getElementById('btnFill');
+                const inst = document.getElementById('instructionText');
+                if(fill) fill.style.height = '0%';
+                if(inst) inst.innerText = "長按 1.5 秒進入避難所";
+            }
+        }
+
+        function triggerSanctuaryStart() {
+            document.getElementById('stateBreathing').classList.add('hidden');
+            document.getElementById('stateActiveRefuge').classList.remove('hidden');
+            document.getElementById('mainHeader').classList.add('opacity-0', 'pointer-events-none');
+
+            initLeafletMap();
+            document.getElementById('map-container').classList.add('active');
+
+            // 檢查是否為首次進入，決定是否顯示地圖教學
+            const hasSeenTutorial = localStorage.getItem('zero_tutorial_done');
+            if (!hasSeenTutorial) {
+                const tutBox = document.getElementById('inMapTutorial');
+                if(tutBox) {
+                    tutBox.classList.remove('hidden');
+                    currentTutorialStep = 1;
+                    updateTutorialUI();
+                    localStorage.setItem('zero_tutorial_done', 'true');
+                } else {
+                    skipInMapTutorial();
+                }
+            } else {
+                skipInMapTutorial();
+            }
+        }
+
+        function skipInMapTutorial() {
+            const tutBox = document.getElementById('inMapTutorial');
+            if(tutBox) tutBox.classList.add('hidden');
+            
+            // 真正開始避難
+            secondsRemaining = 300;
+            updateTimerDisplay();
+            safeTimer = setInterval(() => {
+                secondsRemaining--;
+                updateTimerDisplay();
+                if (secondsRemaining <= 0) {
+                    fastForwardTimer();
+                }
+            }, 1000);
+
+            startNetworkActivity();
+            startAmbientMusic();
+            startBreathingGuide();
+            
+            // 啟動防護盾提示
+            const toast = document.getElementById('blockToast');
+            if (toast) {
+                toast.classList.remove('opacity-0', '-translate-y-10', 'pointer-events-none');
+                setTimeout(() => { toast.classList.add('opacity-0', '-translate-y-10', 'pointer-events-none'); }, 4000);
+            }
+        }
+
+        // 冷卻時間與介面更新
+        function checkCooldown() {
+            if (isPro) return false;
+            const cooldownTime = localStorage.getItem('zero_cooldown');
+            if (cooldownTime && Date.now() < parseInt(cooldownTime)) {
+                return true;
+            }
+            return false;
+        }
+
+        let cooldownTimer;
+        function updateCooldownUI() {
+            const cooldownTime = localStorage.getItem('zero_cooldown');
+            const ring = document.getElementById('ringOuter');
+            const icon = document.getElementById('centerIcon');
+            const inst = document.getElementById('instructionText');
+            const cooldownText = document.getElementById('cooldownText');
+            const unlockBtn = document.getElementById('unlockBtn');
+            const tutorialBtn = document.getElementById('tutorialBtn');
+            
+            if (isPro || !cooldownTime || Date.now() >= parseInt(cooldownTime)) {
+                clearInterval(cooldownTimer);
+                if (ring) {
+                    ring.classList.remove('border-white/20', 'bg-white/5');
+                    ring.classList.add('border-brandLime/40', 'bg-brandDark');
+                }
+                if (icon) {
+                    icon.innerText = "0";
+                    icon.classList.remove('text-white/50');
+                    icon.classList.add('text-brandLime');
+                }
+                if (inst) inst.innerText = "長按 1.5 秒進入避難所";
+                if (cooldownText) cooldownText.classList.add('hidden');
+                if (unlockBtn) unlockBtn.classList.add('hidden');
+                if (tutorialBtn) tutorialBtn.classList.remove('hidden');
+                return;
+            }
+
+            if (ring) {
+                ring.classList.add('border-white/20', 'bg-white/5');
+                ring.classList.remove('border-brandLime/40', 'bg-brandDark');
+            }
+            if (icon) {
+                icon.innerText = "休";
+                icon.classList.add('text-white/50');
+                icon.classList.remove('text-brandLime');
+            }
+            if (inst) inst.innerText = "避難所正在冷卻重置中";
+            if (cooldownText) cooldownText.classList.remove('hidden');
+            if (unlockBtn) unlockBtn.classList.remove('hidden');
+            if (tutorialBtn) tutorialBtn.classList.add('hidden');
+
+            clearInterval(cooldownTimer);
+            cooldownTimer = setInterval(() => {
+                const now = Date.now();
+                const target = parseInt(cooldownTime);
+                if (now >= target) {
+                    updateCooldownUI();
+                } else {
+                    const diff = target - now;
+                    const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                    const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                    const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                    if (cooldownText) cooldownText.innerText = `${h}:${m}:${s}`;
+                }
+            }, 1000);
+        }
+
+        // 登入與其他模態框
+        function applyProUI() {
+            const badge = document.getElementById('proBadge');
+            if (badge) badge.classList.remove('hidden');
+            const loginBtn = document.querySelector('header button');
+            if (loginBtn) loginBtn.classList.add('hidden');
+        }
+        function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
+        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+        function processLogin() {
+            const email = document.getElementById('emailInput').value;
+            if(email) {
+                localStorage.setItem('zero_is_pro', 'true');
+                isPro = true;
+                applyProUI();
+                updateCooldownUI();
+                closeLoginModal();
+                spawnToast('💎', '身份驗證成功', 'text-[9px] text-brandLime tracking-widest uppercase font-semibold', '歡迎回來，守護者。深層避難權益已解鎖。', '', 'border-brandLime/40');
+            }
+        }
+        function openTutorial() { document.getElementById('tutorialModal').classList.remove('hidden'); }
+        function closeTutorial() { document.getElementById('tutorialModal').classList.add('hidden'); }
+
+        // 隱藏後台數據
+        function addAdminLog(msg) {
+            const container = document.getElementById('adminLogContainer');
+            if(!container) return;
+            const time = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerText = `[${time}] ${msg}`;
+            container.prepend(logEntry);
+        }
+        function closeAdmin() { document.getElementById('adminDashboard').classList.add('hidden'); }
+        
+        // 浮動氣泡教學邏輯
+        function updateTutorialUI() {
+            const title = document.getElementById('tutorialTitle');
+            const desc = document.getElementById('tutorialDesc');
+            const badge = document.getElementById('tutorialStepBadge');
+            const tutBox = document.getElementById('inMapTutorial');
+            const arrow = document.getElementById('tutorialArrow');
+            
+            if(!title || !tutBox) return;
+
+            tutBox.classList.remove('border-brandLime/50', 'border-orange-500/50', 'border-white/50');
+            if(arrow) arrow.classList.remove('bg-brandLime/10', 'bg-orange-500/10', 'bg-white/10', '-top-2', '-bottom-2', '-left-2', '-right-2', 'border-t', 'border-l', 'border-b', 'border-r');
+
+            if (currentTutorialStep === 1) {
+                badge.innerText = 'Step 1 / 3';
+                title.innerText = '全球共鳴地圖';
+                title.className = 'text-sm text-brandLime font-light tracking-widest uppercase';
+                desc.innerText = '這些光點代表此刻正在避難的真實同行者。\n👉 試著點擊地圖任意處，發送一圈共鳴。';
+                
+                tutBox.style.top = '40%'; tutBox.style.left = '50%'; tutBox.style.bottom = 'auto';
+                tutBox.classList.add('border-brandLime/50');
+                
+            } else if (currentTutorialStep === 2) {
+                badge.innerText = 'Step 2 / 3';
+                title.innerText = 'SOS 求助信標';
+                title.className = 'text-sm text-orange-400 font-light tracking-widest uppercase';
+                desc.innerText = '當你快撐不住時，點擊下方發送求助，世界會回應你。\n👉 試著點擊下方的「發送求助信號」。';
+                
+                tutBox.style.top = 'auto'; tutBox.style.bottom = '120px'; tutBox.style.left = '50%';
+                tutBox.classList.add('border-orange-500/50');
+                
+                if(arrow) {
+                    arrow.classList.remove('hidden');
+                    arrow.classList.add('bg-brandDark', '-bottom-2', 'border-b', 'border-r', 'border-white/20');
+                }
+                
+            } else if (currentTutorialStep === 3) {
+                badge.innerText = 'Step 3 / 3';
+                title.innerText = '準備深呼吸';
+                title.className = 'text-sm text-white font-light tracking-widest uppercase';
+                desc.innerText = '教學完成。倒數計時即將開始，請享受這 5 分鐘的絕對寧靜。';
+                
+                tutBox.style.top = '120px'; tutBox.style.bottom = 'auto'; tutBox.style.left = '50%';
+                tutBox.classList.add('border-white/50');
+                
+                if(arrow) {
+                    arrow.classList.remove('hidden');
+                    arrow.classList.add('bg-brandDark', '-top-2', 'border-t', 'border-l', 'border-white/20');
+                }
+                document.getElementById('tutorialNextBtn').innerText = '開始避難';
+            }
+        }
+
+        function nextTutorialStep() {
+            if (currentTutorialStep < 3) {
+                currentTutorialStep++;
+                updateTutorialUI();
+            } else {
+                skipInMapTutorial();
+            }
         }
 
         function fastForwardTimer() {
