@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Zero 避風港",
+    "slug": "zero-sanctuary",
+    "scheme": "zero-sanctuary",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#050505"
+    },
+    "ios": {
+      "bundleIdentifier": "com.zero.sanctuary",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Zero 避風港需要音訊系統權限設定以確保沉浸式白噪音與背景音場播放正常運作（本應用程式不會錄音或收集任何語音資料）。",
+        "UIBackgroundModes": [
+          "audio"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.zero.sanctuary",
+      "adaptiveIcon": {
+        "backgroundColor": "#050505",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Zero 避風港需要音訊系統權限設定以確保沉浸式白噪音與背景音場播放正常運作（本應用程式不會錄音或收集任何語音資料）。",
+          "enableBackgroundPlayback": true,
+          "enableBackgroundRecording": false
+        }
+      ]
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+export const COLORS = {
+  bg: '#050505',
+  surface: '#111214',
+  surfaceElevated: '#1A1C20',
+  glass: 'rgba(18, 20, 24, 0.76)',
+  glassBorder: 'rgba(255, 255, 255, 0.10)',
+  lime: '#DEFF9A',
+  limeSoft: 'rgba(222, 255, 154, 0.14)',
+  limeBorder: 'rgba(222, 255, 154, 0.35)',
+  amber: '#FFB347',
+  amberSoft: 'rgba(255, 179, 71, 0.14)',
+  amberBorder: 'rgba(255, 179, 71, 0.4)',
+  danger: '#FF6B6B',
+  textPrimary: '#F7F8FA',
+  textSecondary: 'rgba(247, 248, 250, 0.68)',
+  textMuted: 'rgba(247, 248, 250, 0.42)',
+} as const;
